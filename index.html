@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Task Manager - Calendar View</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- 1. 左側 Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">Mini Manager</div>
+            <button id="view-month-btn" class="nav-btn active">
+                <span class="icon">📅</span>
+                <span>主月檢視</span>
+            </button>
+            <button id="view-week-btn" class="nav-btn">
+                <span class="icon">📊</span>
+                <span>周檢視</span>
+            </button>
+            <button id="view-matrix-btn" class="nav-btn">
+                <span class="icon">📌</span>
+                <span>象限表</span>
+            </button>
+
+            <hr class="sidebar-divider">
+            <button id="view-course-btn" class="nav-btn">
+                <span class="icon">🎓</span>
+                <span>115-1</span>
+            </button>
+            <button id="view-subtask-btn" class="nav-btn">
+                <span class="icon">📝</span>
+                <span>任務細項安排</span>
+            </button>
+            <button id="view-overdue-btn" class="nav-btn">
+                <span class="icon">⚠️</span>
+                <span>逾期事項</span>
+            </button>
+        </aside>
+
+        <!-- 主內容區 -->
+        <div class="main-content">
+            <!-- 2. 頂部控制列 -->
+            <header class="calendar-controls">
+                <div class="left-controls">
+                    <button id="today-btn" class="btn-secondary">今天</button>
+                    <div class="nav-btns" id="nav-btns-group">
+                        <button id="prev-btn" class="icon-btn">&lt;</button>
+                        <button id="next-btn" class="icon-btn">&gt;</button>
+                    </div>
+                    <h2 id="view-title">2026年10月</h2>
+                </div>
+            </header>
+
+            <!-- 3. Month View -->
+            <main id="month-view" class="view-container">
+                <div class="calendar-weekdays">
+                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                </div>
+                <div class="calendar-days" id="calendar-days"></div>
+
+                <div class="color-legend-bar">
+                    <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
+                    <div class="legend-items">
+                        <span class="legend-item"><span class="legend-dot" style="background-color: #1a73e8;"></span>藍色：自己的行程</span>
+                        <span class="legend-item"><span class="legend-dot" style="background-color: #f2994a;"></span>橘色：報告</span>
+                        <span class="legend-item"><span class="legend-dot" style="background-color: #eb5757;"></span>紅色：期中/期末考</span>
+                        <span class="legend-item"><span class="legend-dot" style="background-color: #9b51e0;"></span>紫色：社團/校園大使</span>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 4. Week View -->
+            <main id="week-view" class="view-container hidden">
+                <div class="week-header-row" id="week-header-row">
+                    <div class="time-corner">GMT+8</div>
+                </div>
+                <div class="week-body-scroll">
+                    <div class="week-grid">
+                        <div class="time-labels" id="time-labels"></div>
+                        <div class="week-columns" id="week-columns"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 5. Eisenhower Matrix View -->
+            <main id="matrix-view" class="view-container hidden">
+                <div class="matrix-grid">
+                    <div class="matrix-box q2">
+                        <div class="matrix-box-header">重要 且 不緊急 (Quadrant II)</div>
+                        <div class="matrix-task-list" id="q2-list"></div>
+                    </div>
+                    <div class="matrix-box q1">
+                        <div class="matrix-box-header">重要 且 緊急 (Quadrant I)</div>
+                        <div class="matrix-task-list" id="q1-list"></div>
+                    </div>
+                    <div class="matrix-box q3">
+                        <div class="matrix-box-header">不重要 且 不緊急 (Quadrant III)</div>
+                        <div class="matrix-task-list" id="q3-list"></div>
+                    </div>
+                    <div class="matrix-box q4">
+                        <div class="matrix-box-header">不重要 且 緊急 (Quadrant IV)</div>
+                        <div class="matrix-task-list" id="q4-list"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 6. Overdue View -->
+            <main id="overdue-view" class="view-container hidden">
+                <div class="overdue-container">
+                    <div class="overdue-header-desc">
+                        下列為已過期且尚未標記為完成的事項，您可以直接完成或重新安排日期時間與屬性：
+                    </div>
+                    <div id="overdue-list" class="overdue-list"></div>
+                </div>
+            </main>
+
+            <!-- 7. 任務細項安排 -->
+            <main id="subtask-view" class="view-container hidden">
+                <div class="calendar-weekdays">
+                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                </div>
+                <div class="calendar-days" id="subtask-calendar-days"></div>
+
+                <div class="project-details-section">
+                    <div class="project-details-card">
+                        <div class="project-details-header">
+                            <h3>📝 每日細項任務分配 (可在此頁面單向修改或新增僅屬於本頁面的任務)</h3>
+                            <div class="project-date-picker">
+                                <label>選擇日期：</label>
+                                <input type="date" id="subtask-date-input">
+                            </div>
+                        </div>
+                        <div class="input-form">
+                            <div class="form-row">
+                                <label>時間區間：</label>
+                                <input type="time" id="subtask-start-time" value="09:00">
+                                <span>至</span>
+                                <input type="time" id="subtask-end-time" value="10:00">
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="subtask-task-input" placeholder="輸入頁面專屬細項任務..." autocomplete="off">
+                            </div>
+                            <div class="form-row">
+                                <textarea id="subtask-desc-input" placeholder="輸入詳細說明 / 備註..." rows="2"></textarea>
+                            </div>
+                            <button id="subtask-add-btn">新增細項任務</button>
+                        </div>
+                        <div id="subtask-timeline-list" class="timeline-list" style="margin-top: 16px;"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 8. 115-1 課表 View (僅顯示週一至週五，最多 16 週) -->
+            <main id="course-view" class="view-container hidden">
+                <div class="course-header-bar">
+                    <div class="course-week-selector">
+                        <button id="course-prev-week" class="btn-secondary">&lt; 上一週</button>
+                        <span id="course-week-title" class="course-week-title">第 1 週 (9/7 - 9/11)</span>
+                        <button id="course-next-week" class="btn-secondary">下一週 &gt;</button>
+                    </div>
+                    <button id="open-add-course-btn" class="btn-secondary" style="background-color: #1a73e8; color: white;">+ 新增學期課程</button>
+                </div>
+
+                <!-- 課表顯示網格 (週一至週五) -->
+                <div class="course-grid-container">
+                    <div class="calendar-weekdays course-weekdays">
+                        <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div>
+                    </div>
+                    <div class="course-days-grid" id="course-days-grid"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Task Modal (行程編輯與新增視窗) -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-date-title">行程管理</h3>
+                <span id="close-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="input-form">
+                    <div class="form-row">
+                        <label>執行日期：</label>
+                        <input type="date" id="modal-task-date">
+                    </div>
+                    <div class="form-row">
+                        <label>時間區間：</label>
+                        <input type="time" id="start-time" value="09:00">
+                        <span>至</span>
+                        <input type="time" id="end-time" value="10:00">
+                    </div>
+                    <div class="form-row">
+                        <label for="important-checkbox">屬性標籤：</label>
+                        <input type="checkbox" id="important-checkbox">
+                        <label for="important-checkbox" style="cursor: pointer;">標示為「重要」事項</label>
+                    </div>
+                    <div class="form-row">
+                        <label>色彩分類：</label>
+                        <div class="color-picker-group">
+                            <input type="radio" name="color-option" id="c-blue" value="#1a73e8" checked>
+                            <label for="c-blue" class="color-circle" style="background-color: #1a73e8;" title="自己的行程"></label>
+
+                            <input type="radio" name="color-option" id="c-yellow" value="#f2994a">
+                            <label for="c-yellow" class="color-circle" style="background-color: #f2994a;" title="報告"></label>
+
+                            <input type="radio" name="color-option" id="c-red" value="#eb5757">
+                            <label for="c-red" class="color-circle" style="background-color: #eb5757;" title="期中/期末考"></label>
+
+                            <input type="radio" name="color-option" id="c-purple" value="#9b51e0">
+                            <label for="c-purple" class="color-circle" style="background-color: #9b51e0;" title="社團/校園大使"></label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="task-input" placeholder="輸入任務名稱..." autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <textarea id="task-desc-input" placeholder="輸入 Description (說明與備註)..." rows="2"></textarea>
+                    </div>
+                    <button id="add-btn">儲存 / 新增</button>
+                </div>
+                <ul id="modal-task-list" class="task-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 課程編輯與管理 Modal -->
+    <div id="course-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="course-modal-title">新增 115-1 課程定義</h3>
+                <span id="close-course-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="input-form">
+                    <div class="form-row">
+                        <label>課程名稱：</label>
+                        <input type="text" id="c-name" placeholder="例如：經濟學 (上)" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <label>上課地點：</label>
+                        <input type="text" id="c-location" placeholder="例如：IB-409-1" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <label>星期幾：</label>
+                        <select id="c-dayofweek" style="padding: 6px; border-radius: 4px; border: 1px solid #dadce0;">
+                            <option value="1">星期一</option>
+                            <option value="2">星期二</option>
+                            <option value="3">星期三</option>
+                            <option value="4">星期四</option>
+                            <option value="5">星期五</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>時間區間：</label>
+                        <input type="time" id="c-start-time" value="13:20">
+                        <span>至</span>
+                        <input type="time" id="c-end-time" value="16:20">
+                    </div>
+                    <div class="form-row">
+                        <label>代表色彩：</label>
+                        <input type="color" id="c-color" value="#ffb6c1">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="save-course-btn" style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存課程資訊</button>
+                        <button id="delete-course-btn" style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除課程</button>
+                    </div>
+                </div>
+
+                <!-- 單週特定日期出缺勤與考試設定區塊 -->
+                <div id="attendance-section" style="display: none; margin-top: 16px; border-top: 1px solid #dadce0; padding-top: 12px;">
+                    <h4 id="att-section-title" style="font-size: 0.95rem; margin-bottom: 8px; color: #3c4043;">日期 出缺席與考試狀態</h4>
+                    
+                    <!-- 出席紀錄區塊 -->
+                    <div class="status-sub-title">📌 出缺席紀錄</div>
+                    <div class="status-btn-group">
+                        <button class="att-status-btn" data-status="出席">出席</button>
+                        <button class="att-status-btn" data-status="遲到">遲到</button>
+                        <button class="att-status-btn" data-status="曠課">曠課</button>
+                        <button class="att-status-btn" data-status="請假">請假</button>
+                        <button class="att-status-btn danger" data-status="停課">停課</button>
+                    </div>
+
+                    <!-- 考試設定區塊 -->
+                    <div class="status-sub-title" style="margin-top: 12px;">📝 考試安排 (點擊切換/取消)</div>
+                    <div class="status-btn-group">
+                        <button class="att-status-btn exam-btn" data-status="期中考">期中考</button>
+                        <button class="att-status-btn exam-btn" data-status="期末考">期末考</button>
+                    </div>
+
+                    <div style="margin-top: 10px; font-size: 0.8rem; color: #70757a;">
+                        💡 提示：設定為「期中考/期末考」時該堂課會轉為紅色，並同步寫入主月檢視。再次點擊已選取的考試按鈕即可取消。
+                    </div>
+                </div>
+
+                <div id="master-course-section" style="margin-top: 16px;">
+                    <h4>已建立的課程列表</h4>
+                    <ul id="course-master-list" class="task-list" style="margin-top: 8px;"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
