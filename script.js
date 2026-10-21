@@ -1355,7 +1355,47 @@ function setActiveNavBtn(activeBtn) {
   const allBtns = document.querySelectorAll('.sidebar .nav-btn');
   allBtns.forEach((btn) => btn.classList.remove('active'));
   activeBtn.classList.add('active');
+  if (window.innerWidth <= 768) {
+    closeSidebar();
+  }
 }
+
+// 行動版側邊欄抽屜 (Mobile Sidebar Drawer) 控制邏輯
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const sidebar = document.getElementById('sidebar');
+
+function openSidebar() {
+  if (sidebar) sidebar.classList.add('open');
+  if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+  document.body.classList.add('sidebar-open');
+}
+
+function closeSidebar() {
+  if (sidebar) sidebar.classList.remove('open');
+  if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+  document.body.classList.remove('sidebar-open');
+}
+
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', openSidebar);
+}
+if (sidebarCloseBtn) {
+  sidebarCloseBtn.addEventListener('click', closeSidebar);
+}
+if (sidebarBackdrop) {
+  sidebarBackdrop.addEventListener('click', closeSidebar);
+}
+
+// 支援鍵盤 Escape 鍵快速關閉所有浮層/選單
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeSidebar();
+    closeModal();
+    if (courseModal) courseModal.style.display = 'none';
+  }
+});
 
 prevBtn.addEventListener('click', () => {
   if (currentMode === 'month' || currentMode === 'subtask') {

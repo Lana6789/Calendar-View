@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mini Task Manager - Calendar View</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,8 +11,11 @@
 <body>
     <div class="app-layout">
         <!-- 1. 左側 Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">Mini Manager</div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">Mini Manager</div>
+                <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="關閉選單">&times;</button>
+            </div>
             <button id="view-month-btn" class="nav-btn active">
                 <span class="icon">📅</span>
                 <span>主月檢視</span>
@@ -40,12 +43,18 @@
                 <span>逾期事項</span>
             </button>
         </aside>
+        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
         <!-- 主內容區 -->
         <div class="main-content">
             <!-- 2. 頂部控制列 -->
             <header class="calendar-controls">
                 <div class="left-controls">
+                    <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="打開導覽選單">
+                        <span class="hamburger-bar"></span>
+                        <span class="hamburger-bar"></span>
+                        <span class="hamburger-bar"></span>
+                    </button>
                     <button id="today-btn" class="btn-secondary">今天</button>
                     <div class="nav-btns" id="nav-btns-group">
                         <button id="prev-btn" class="icon-btn">&lt;</button>
@@ -75,13 +84,15 @@
 
             <!-- 4. Week View -->
             <main id="week-view" class="view-container hidden">
-                <div class="week-header-row" id="week-header-row">
-                    <div class="time-corner">GMT+8</div>
-                </div>
-                <div class="week-body-scroll">
-                    <div class="week-grid">
-                        <div class="time-labels" id="time-labels"></div>
-                        <div class="week-columns" id="week-columns"></div>
+                <div class="week-scroll-wrapper">
+                    <div class="week-header-row" id="week-header-row">
+                        <div class="time-corner">GMT+8</div>
+                    </div>
+                    <div class="week-body-scroll">
+                        <div class="week-grid">
+                            <div class="time-labels" id="time-labels"></div>
+                            <div class="week-columns" id="week-columns"></div>
+                        </div>
                     </div>
                 </div>
             </main>
