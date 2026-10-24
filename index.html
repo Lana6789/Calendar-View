@@ -79,8 +79,9 @@
                 </div>
             </header>
 
-            <!-- 3. Month View -->
+            <!-- 3. Month View (主月檢視) -->
             <main id="month-view" class="view-container">
+                <!-- 星期標題欄 -->
                 <div class="calendar-weekdays">
                     <div>週日</div>
                     <div>週一</div>
@@ -90,19 +91,23 @@
                     <div>週五</div>
                     <div>週六</div>
                 </div>
+                <!-- 存放月曆日期的網格容器 (script.js 會將表格日期渲染到這裡) -->
                 <div class="calendar-days" id="calendar-days"></div>
 
-                <div class="color-legend-bar">
-                    <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
-                    <div class="legend-items">
+                <!-- 下方的任務顏色圖例說明 (選填) -->
+                <div class="color-legend-bar"
+                    style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 8px;">
+                    <div class="legend-title" style="font-weight: bold; margin-bottom: 5px;">💡 Task Color Legend
+                        (任務顏色說明)：</div>
+                    <div class="legend-items" style="display: flex; gap: 15px; font-size: 0.9rem;">
                         <span class="legend-item"><span class="legend-dot"
-                                style="background-color: #1a73e8;"></span>藍色：自己的行程</span>
+                                style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: #1a73e8; margin-right: 5px;"></span>藍色：自己的行程</span>
                         <span class="legend-item"><span class="legend-dot"
-                                style="background-color: #f2994a;"></span>橘色：報告</span>
+                                style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: #f2994a; margin-right: 5px;"></span>橘色：報告</span>
                         <span class="legend-item"><span class="legend-dot"
-                                style="background-color: #eb5757;"></span>紅色：期中/期末考</span>
+                                style="background-color: #eb5757; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right: 5px;"></span>紅色：期中/期末考</span>
                         <span class="legend-item"><span class="legend-dot"
-                                style="background-color: #9b51e0;"></span>紫色：社團/校園大使</span>
+                                style="background-color: #9b51e0; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right: 5px;"></span>紫色：社團/校園大使</span>
                     </div>
                 </div>
             </main>

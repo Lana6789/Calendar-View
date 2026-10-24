@@ -121,35 +121,42 @@ let courses = [];
 let courseAttendance = {};
 
 // 頁面初始化
-subtaskDateInput.value = selectedDateStr;
+if (subtaskDateInput) subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
+
+// 預先繪製一次空白月曆與畫面
+renderView();
 
 // ------------------------------------------------------------------
 // Firebase Auth 登入 / 登出邏輯
 // ------------------------------------------------------------------
 
-loginBtn.addEventListener('click', () => {
-  signInWithPopup(auth, googleProvider).catch((err) => {
-    console.error("登入失敗:", err);
-    alert("Google 登入失敗，請確認 Firebase Console 已啟用 Google 驗證服務！");
+if (loginBtn) {
+  loginBtn.addEventListener('click', () => {
+    signInWithPopup(auth, googleProvider).catch((err) => {
+      console.error("登入失敗:", err);
+      alert("Google 登入失敗，請確認 Firebase Console 已啟用 Google 驗證服務！");
+    });
   });
-});
+}
 
-logoutBtn.addEventListener('click', () => {
-  signOut(auth).then(() => {
-    alert("已成功登出！");
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    signOut(auth).then(() => {
+      alert("已成功登出！");
+    });
   });
-});
+}
 
 // 監聽使用者 Auth 登入狀態
 onAuthStateChanged(auth, (user) => {
   if (user) {
     // 已登入狀態
     currentUser = user;
-    userPhoto.src = user.photoURL || '';
-    userName.textContent = user.displayName || '使用者';
-    userInfoSection.style.display = 'flex';
-    loginBtn.style.display = 'none';
+    if (userPhoto) userPhoto.src = user.photoURL || '';
+    if (userName) userName.textContent = user.displayName || '使用者';
+    if (userInfoSection) userInfoSection.style.display = 'flex';
+    if (loginBtn) loginBtn.style.display = 'none';
 
     // 動態定錨當前使用者的專屬資料路徑
     docRef = doc(db, "users", currentUser.uid, "data", "miniTaskManagerData");
@@ -176,13 +183,13 @@ onAuthStateChanged(auth, (user) => {
   } else {
     // 未登入狀態
     currentUser = null;
-    userInfoSection.style.display = 'none';
-    loginBtn.style.display = 'flex';
+    if (userInfoSection) userInfoSection.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'flex';
 
     if (unsubscribeFirestore) unsubscribeFirestore();
     docRef = null;
 
-    // 清空記憶體資料，呈現空白狀態
+    // 清空記憶體資料，繪製空白表格
     tasks = [];
     subtaskPageTasks = [];
     courses = [];
@@ -261,6 +268,7 @@ function isTaskUrgent(taskDateStr) {
 }
 
 function initTimeLabels() {
+  if (!timeLabels) return;
   timeLabels.innerHTML = '';
   for (let i = 0; i < 24; i++) {
     const label = document.createElement('div');
@@ -273,38 +281,113 @@ function initTimeLabels() {
 }
 
 function renderView() {
-  monthView.classList.add('hidden');
-  weekView.classList.add('hidden');
-  matrixView.classList.add('hidden');
-  overdueView.classList.add('hidden');
-  subtaskView.classList.add('hidden');
-  courseView.classList.add('hidden');
-  navBtnsGroup.style.display = 'flex';
+  if (monthView) monthView.classList.add('hidden');
+  if (weekView) weekView.classList.add('hidden');
+  if (matrixView) matrixView.classList.add('hidden');
+  if (overdueView) overdueView.classList.add('hidden');
+  if (subtaskView) subtaskView.classList.add('hidden');
+  if (courseView) courseView.classList.add('hidden');
+  if (navBtnsGroup) navBtnsGroup.style.display = 'flex';
 
-  if (currentMode === 'month') {
+  if (currentMode === 'month' && monthView) {
     monthView.classList.remove('hidden');
     renderCalendar();
-  } else if (currentMode === 'week') {
+  } else if (currentMode === 'week' && weekView) {
     weekView.classList.remove('hidden');
     renderWeekView();
-  } else if (currentMode === 'matrix') {
+  } else if (currentMode === 'matrix' && matrixView) {
     matrixView.classList.remove('hidden');
-    navBtnsGroup.style.display = 'none';
-    viewTitle.textContent = 'Eisenhower Matrix 艾森豪象限表';
+    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+    if (viewTitle) viewTitle.textContent = 'Eisenhower Matrix 艾森豪象限表';
     renderMatrixView();
-  } else if (currentMode === 'overdue') {
+  } else if (currentMode === 'overdue' && overdueView) {
     overdueView.classList.remove('hidden');
-    navBtnsGroup.style.display = 'none';
-    viewTitle.textContent = 'Overdue Tasks 逾期未完成事項';
+    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+    if (viewTitle) viewTitle.textContent = 'Overdue Tasks 逾期未完成事項';
     renderOverdueView();
-  } else if (currentMode === 'subtask') {
+  } else if (currentMode === 'subtask' && subtaskView) {
     subtaskView.classList.remove('hidden');
     renderSubtaskCalendar();
-  } else if (currentMode === 'course') {
+  } else if (currentMode === 'course' && courseView) {
     courseView.classList.remove('hidden');
-    navBtnsGroup.style.display = 'none';
-    viewTitle.textContent = '115學年度 第一學期 課表 (115-1)';
+    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+    if (viewTitle) viewTitle.textContent = '115學年度 第一學期 課表 (115-1)';
     renderCourseView();
+  }
+}
+
+function renderCalendar() {
+  const targetContainer = document.getElementById('calendar-days');
+  if (!targetContainer) return;
+
+  targetContainer.innerHTML = '';
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  if (viewTitle) {
+    viewTitle.textContent = `${year}年 ${month + 1}月`;
+  }
+
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const todayStr = formatDate(new Date());
+
+  // 1. 生成月初前空白格子
+  for (let i = 0; i < firstDayIndex; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'day-cell empty';
+    targetContainer.appendChild(emptyCell);
+  }
+
+  // 2. 渲染當月 1日 ~ 31日 表格內容
+  for (let day = 1; day <= totalDays; day++) {
+    const dayCell = document.createElement('div');
+    dayCell.className = 'day-cell';
+
+    const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'cell-header';
+
+    const dayNumSpan = document.createElement('span');
+    dayNumSpan.className = 'day-number';
+    dayNumSpan.textContent = day;
+    if (cellDateStr === todayStr) dayNumSpan.classList.add('today-num');
+
+    headerDiv.appendChild(dayNumSpan);
+    dayCell.appendChild(headerDiv);
+
+    const tasksContainer = document.createElement('div');
+    tasksContainer.className = 'cell-tasks';
+
+    let cellTasks = tasks.filter((t) => t.date === cellDateStr);
+    cellTasks = sortTasksByChronologicalOrder(cellTasks);
+
+    cellTasks.forEach((task) => {
+      const taskBadge = document.createElement('div');
+      taskBadge.className = 'task-badge';
+      if (task.completed) taskBadge.classList.add('completed');
+
+      if (!task.completed && task.color) {
+        taskBadge.style.backgroundColor = task.color + '22';
+        taskBadge.style.color = task.color;
+        taskBadge.style.borderLeft = `3px solid ${task.color}`;
+      }
+
+      const impMark = task.important ? '❗ ' : '';
+      const timeRange = task.startTime ? `${task.startTime} ` : '';
+      taskBadge.textContent = `${impMark}${timeRange}${task.text}`;
+      tasksContainer.appendChild(taskBadge);
+    });
+
+    dayCell.appendChild(tasksContainer);
+
+    dayCell.addEventListener('click', () => {
+      selectedDateStr = cellDateStr;
+      openModal();
+    });
+
+    targetContainer.appendChild(dayCell);
   }
 }
 
@@ -336,6 +419,7 @@ function getActiveCourseEventsForDate(dateStr) {
 }
 
 function renderCourseView() {
+  if (!courseDaysGrid) return;
   courseDaysGrid.innerHTML = '';
   const weekStart = new Date(semesterStart);
   weekStart.setDate(semesterStart.getDate() + currentWeekOffset * 7);
@@ -344,7 +428,9 @@ function renderCourseView() {
   weekEnd.setDate(weekStart.getDate() + 4);
 
   const weekNum = currentWeekOffset + 1;
-  courseWeekTitle.textContent = `第 ${weekNum} 週 (${formatSlashDate(weekStart)} - ${formatSlashDate(weekEnd)})`;
+  if (courseWeekTitle) {
+    courseWeekTitle.textContent = `第 ${weekNum} 週 (${formatSlashDate(weekStart)} - ${formatSlashDate(weekEnd)})`;
+  }
 
   for (let i = 0; i < 5; i++) {
     const dayDate = new Date(weekStart);
@@ -401,7 +487,7 @@ function openCourseEditModal(course = null, dateStr = '') {
   selectedAttDateStr = dateStr;
 
   if (course) {
-    courseModalTitle.textContent = `編輯課程：${course.name}`;
+    if (courseModalTitle) courseModalTitle.textContent = `編輯課程：${course.name}`;
     document.getElementById('c-name').value = course.name;
     document.getElementById('c-location').value = course.location || '';
     document.getElementById('c-dayofweek').value = course.dayOfWeek;
@@ -409,21 +495,21 @@ function openCourseEditModal(course = null, dateStr = '') {
     document.getElementById('c-end-time').value = course.endTime;
     document.getElementById('c-color').value = course.color || '#ffb6c1';
 
-    deleteCourseBtn.style.display = 'block';
+    if (deleteCourseBtn) deleteCourseBtn.style.display = 'block';
 
     if (dateStr) {
-      attendanceSection.style.display = 'block';
+      if (attendanceSection) attendanceSection.style.display = 'block';
       const dateObj = new Date(dateStr);
       const currentAtt = courseAttendance[`${course.id}_${dateStr}`] || '出席';
-      attSectionTitle.textContent = `日期 ${formatSlashDate(dateObj)} 出缺席與考試狀態 (目前：${currentAtt})`;
+      if (attSectionTitle) attSectionTitle.textContent = `日期 ${formatSlashDate(dateObj)} 出缺席與考試狀態 (目前：${currentAtt})`;
       updateModalButtonStates(currentAtt);
     } else {
-      attendanceSection.style.display = 'none';
+      if (attendanceSection) attendanceSection.style.display = 'none';
     }
 
-    masterCourseSection.style.display = 'none';
+    if (masterCourseSection) masterCourseSection.style.display = 'none';
   } else {
-    courseModalTitle.textContent = '新增 115-1 課程定義';
+    if (courseModalTitle) courseModalTitle.textContent = '新增 115-1 課程定義';
     document.getElementById('c-name').value = '';
     document.getElementById('c-location').value = '';
     document.getElementById('c-dayofweek').value = 1;
@@ -431,13 +517,13 @@ function openCourseEditModal(course = null, dateStr = '') {
     document.getElementById('c-end-time').value = '16:20';
     document.getElementById('c-color').value = '#ffb6c1';
 
-    deleteCourseBtn.style.display = 'none';
-    attendanceSection.style.display = 'none';
-    masterCourseSection.style.display = 'block';
+    if (deleteCourseBtn) deleteCourseBtn.style.display = 'none';
+    if (attendanceSection) attendanceSection.style.display = 'none';
+    if (masterCourseSection) masterCourseSection.style.display = 'block';
     renderCourseMasterList();
   }
 
-  courseModal.style.display = 'flex';
+  if (courseModal) courseModal.style.display = 'flex';
 }
 
 function updateModalButtonStates(currentStatus) {
@@ -491,67 +577,72 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
     }
 
     saveAllDataToFirebase();
-    courseModal.style.display = 'none';
+    if (courseModal) courseModal.style.display = 'none';
     renderCourseView();
   });
 });
 
-openAddCourseBtn.addEventListener('click', () => { openCourseEditModal(null, ''); });
-closeCourseModalBtn.addEventListener('click', () => { courseModal.style.display = 'none'; });
+if (openAddCourseBtn) openAddCourseBtn.addEventListener('click', () => { openCourseEditModal(null, ''); });
+if (closeCourseModalBtn) closeCourseModalBtn.addEventListener('click', () => { if (courseModal) courseModal.style.display = 'none'; });
 
-saveCourseBtn.addEventListener('click', () => {
-  const name = document.getElementById('c-name').value.trim();
-  const loc = document.getElementById('c-location').value.trim();
-  const dow = document.getElementById('c-dayofweek').value;
-  const sTime = document.getElementById('c-start-time').value;
-  const eTime = document.getElementById('c-end-time').value;
-  const color = document.getElementById('c-color').value;
+if (saveCourseBtn) {
+  saveCourseBtn.addEventListener('click', () => {
+    const name = document.getElementById('c-name').value.trim();
+    const loc = document.getElementById('c-location').value.trim();
+    const dow = document.getElementById('c-dayofweek').value;
+    const sTime = document.getElementById('c-start-time').value;
+    const eTime = document.getElementById('c-end-time').value;
+    const color = document.getElementById('c-color').value;
 
-  if (!name) {
-    alert('請輸入課程名稱！');
-    return;
-  }
-
-  if (editingCourseId) {
-    const course = courses.find((c) => c.id === editingCourseId);
-    if (course) {
-      course.name = name;
-      course.location = loc;
-      course.dayOfWeek = Number(dow);
-      course.startTime = sTime;
-      course.endTime = eTime;
-      course.color = color;
+    if (!name) {
+      alert('請輸入課程名稱！');
+      return;
     }
-  } else {
-    const newCourse = {
-      id: 'course_' + Date.now(),
-      name: name,
-      location: loc,
-      dayOfWeek: Number(dow),
-      startTime: sTime,
-      endTime: eTime,
-      color: color
-    };
-    courses.push(newCourse);
-  }
 
-  saveAllDataToFirebase();
-  courseModal.style.display = 'none';
-  renderCourseMasterList();
-  renderCourseView();
-});
+    if (editingCourseId) {
+      const course = courses.find((c) => c.id === editingCourseId);
+      if (course) {
+        course.name = name;
+        course.location = loc;
+        course.dayOfWeek = Number(dow);
+        course.startTime = sTime;
+        course.endTime = eTime;
+        course.color = color;
+      }
+    } else {
+      const newCourse = {
+        id: 'course_' + Date.now(),
+        name: name,
+        location: loc,
+        dayOfWeek: Number(dow),
+        startTime: sTime,
+        endTime: eTime,
+        color: color
+      };
+      courses.push(newCourse);
+    }
 
-deleteCourseBtn.addEventListener('click', () => {
-  if (!editingCourseId) return;
-  if (confirm('確定要刪除這門課程嗎？這將會同步從課表中完全移除。')) {
-    courses = courses.filter((c) => c.id !== editingCourseId);
     saveAllDataToFirebase();
-    courseModal.style.display = 'none';
+    if (courseModal) courseModal.style.display = 'none';
+    renderCourseMasterList();
     renderCourseView();
-  }
-});
+  });
+}
+
+if (deleteCourseBtn) {
+  deleteCourseBtn.addEventListener('click', () => {
+    if (!editingCourseId) return;
+    if (confirm('確定要刪除這門課程嗎？這將會同步從課表中完全移除。')) {
+      courses = courses.filter((c) => c.id !== editingCourseId);
+      saveAllDataToFirebase();
+      if (courseModal) courseModal.style.display = 'none';
+      renderCourseView();
+    }
+  });
+}
 
 function renderCourseMasterList() {
+  if (!courseMasterList) return;
   courseMasterList.innerHTML = '';
   courses.forEach((c) => {
     const li = document.createElement('li');
@@ -576,26 +667,32 @@ function renderCourseMasterList() {
   });
 }
 
-coursePrevWeekBtn.addEventListener('click', () => {
-  if (currentWeekOffset > 0) {
-    currentWeekOffset--;
-    renderCourseView();
-  }
-});
+if (coursePrevWeekBtn) {
+  coursePrevWeekBtn.addEventListener('click', () => {
+    if (currentWeekOffset > 0) {
+      currentWeekOffset--;
+      renderCourseView();
+    }
+  });
+}
 
-courseNextWeekBtn.addEventListener('click', () => {
-  if (currentWeekOffset < 15) {
-    currentWeekOffset++;
-    renderCourseView();
-  }
-});
+if (courseNextWeekBtn) {
+  courseNextWeekBtn.addEventListener('click', () => {
+    if (currentWeekOffset < 15) {
+      currentWeekOffset++;
+      renderCourseView();
+    }
+  });
+}
 
-viewCourseBtn.addEventListener('click', () => {
-  currentMode = 'course';
-  currentWeekOffset = calculateCurrentSemesterWeek();
-  setActiveNavBtn(viewCourseBtn);
-  renderView();
-});
+if (viewCourseBtn) {
+  viewCourseBtn.addEventListener('click', () => {
+    currentMode = 'course';
+    currentWeekOffset = calculateCurrentSemesterWeek();
+    setActiveNavBtn(viewCourseBtn);
+    renderView();
+  });
+}
 
 function renderWeekView() {
   const startOfWeek = new Date(currentDate);
@@ -603,10 +700,10 @@ function renderWeekView() {
 
   const year = startOfWeek.getFullYear();
   const month = startOfWeek.getMonth() + 1;
-  viewTitle.textContent = `${year}年 ${month}月`;
+  if (viewTitle) viewTitle.textContent = `${year}年 ${month}月`;
 
   const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-  weekHeaderRow.innerHTML = '<div class="time-corner">GMT+8</div>';
+  if (weekHeaderRow) weekHeaderRow.innerHTML = '<div class="time-corner">GMT+8</div>';
 
   const weekDates = [];
   const todayStr = formatDate(new Date());
@@ -630,9 +727,10 @@ function renderWeekView() {
 
     headerCell.appendChild(dayName);
     headerCell.appendChild(dayNum);
-    weekHeaderRow.appendChild(headerCell);
+    if (weekHeaderRow) weekHeaderRow.appendChild(headerCell);
   }
 
+  if (!weekColumns) return;
   weekColumns.innerHTML = '';
   weekDates.forEach(({ dateStr }) => {
     const col = document.createElement('div');
@@ -752,11 +850,12 @@ function getCombinedSubtaskTasks() {
 }
 
 function renderSubtaskCalendar() {
+  if (!subtaskCalendarDays) return;
   subtaskCalendarDays.innerHTML = '';
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  viewTitle.textContent = `任務細項安排 - ${year}年 ${month + 1}月`;
+  if (viewTitle) viewTitle.textContent = `任務細項安排 - ${year}年 ${month + 1}月`;
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
@@ -816,7 +915,7 @@ function renderSubtaskCalendar() {
     dayCell.appendChild(tasksContainer);
 
     dayCell.addEventListener('click', () => {
-      subtaskDateInput.value = cellDateStr;
+      if (subtaskDateInput) subtaskDateInput.value = cellDateStr;
       renderSubtaskTimeline();
     });
 
@@ -827,8 +926,9 @@ function renderSubtaskCalendar() {
 }
 
 function renderSubtaskTimeline() {
+  if (!subtaskTimelineList) return;
   subtaskTimelineList.innerHTML = '';
-  const selDate = subtaskDateInput.value || formatDate(new Date());
+  const selDate = (subtaskDateInput && subtaskDateInput.value) ? subtaskDateInput.value : formatDate(new Date());
 
   const allSubtasks = getCombinedSubtaskTasks();
   let daySubtasks = allSubtasks.filter((t) => t.date === selDate);
@@ -930,110 +1030,47 @@ function updateOrAddSubtaskPageOverride(task, changes) {
   saveAllDataToFirebase();
 }
 
-subtaskAddBtn.addEventListener('click', () => {
-  const text = subtaskTaskInput.value.trim();
-  const desc = subtaskDescInput.value.trim();
-  const dateVal = subtaskDateInput.value;
-  const startVal = subtaskStartTime.value;
-  const endVal = subtaskEndTime.value;
+if (subtaskAddBtn) {
+  subtaskAddBtn.addEventListener('click', () => {
+    const text = subtaskTaskInput.value.trim();
+    const desc = subtaskDescInput.value.trim();
+    const dateVal = subtaskDateInput.value;
+    const startVal = subtaskStartTime.value;
+    const endVal = subtaskEndTime.value;
 
-  if (!text) {
-    alert('請輸入細項任務內容！');
-    return;
-  }
+    if (!text) {
+      alert('請輸入細項任務內容！');
+      return;
+    }
 
-  const newSubtask = {
-    id: 'sub_' + Date.now(),
-    text: text,
-    description: desc,
-    startTime: startVal,
-    endTime: endVal,
-    color: '#27ae60',
-    date: dateVal,
-    completed: false,
-    isSubtask: true
-  };
+    const newSubtask = {
+      id: 'sub_' + Date.now(),
+      text: text,
+      description: desc,
+      startTime: startVal,
+      endTime: endVal,
+      color: '#27ae60',
+      date: dateVal,
+      completed: false,
+      isSubtask: true
+    };
 
-  subtaskPageTasks.push(newSubtask);
-  saveAllDataToFirebase();
-  subtaskTaskInput.value = '';
-  subtaskDescInput.value = '';
-  renderSubtaskCalendar();
-});
+    subtaskPageTasks.push(newSubtask);
+    saveAllDataToFirebase();
+    subtaskTaskInput.value = '';
+    subtaskDescInput.value = '';
+    renderSubtaskCalendar();
+  });
+}
 
-subtaskDateInput.addEventListener('change', () => {
-  renderSubtaskTimeline();
-});
-
-function renderCalendar() {
-  calendarDays.innerHTML = '';
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  viewTitle.textContent = `${year}年 ${month + 1}月`;
-
-  const firstDayIndex = new Date(year, month, 1).getDay();
-  const totalDays = new Date(year, month + 1, 0).getDate();
-  const todayStr = formatDate(new Date());
-
-  for (let i = 0; i < firstDayIndex; i++) {
-    const emptyCell = document.createElement('div');
-    emptyCell.className = 'day-cell empty';
-    calendarDays.appendChild(emptyCell);
-  }
-
-  for (let day = 1; day <= totalDays; day++) {
-    const dayCell = document.createElement('div');
-    dayCell.className = 'day-cell';
-
-    const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'cell-header';
-
-    const dayNumSpan = document.createElement('span');
-    dayNumSpan.className = 'day-number';
-    dayNumSpan.textContent = day;
-    if (cellDateStr === todayStr) dayNumSpan.classList.add('today-num');
-
-    headerDiv.appendChild(dayNumSpan);
-    dayCell.appendChild(headerDiv);
-
-    const tasksContainer = document.createElement('div');
-    tasksContainer.className = 'cell-tasks';
-
-    let cellTasks = tasks.filter((t) => t.date === cellDateStr);
-    cellTasks = sortTasksByChronologicalOrder(cellTasks);
-
-    cellTasks.forEach((task) => {
-      const taskBadge = document.createElement('div');
-      taskBadge.className = 'task-badge';
-      if (task.completed) taskBadge.classList.add('completed');
-
-      if (!task.completed && task.color) {
-        taskBadge.style.backgroundColor = task.color + '22';
-        taskBadge.style.color = task.color;
-        taskBadge.style.borderLeft = `3px solid ${task.color}`;
-      }
-
-      const impMark = task.important ? '❗ ' : '';
-      const timeRange = task.startTime ? `${task.startTime} ` : '';
-      taskBadge.textContent = `${impMark}${timeRange}${task.text}`;
-      tasksContainer.appendChild(taskBadge);
-    });
-
-    dayCell.appendChild(tasksContainer);
-
-    dayCell.addEventListener('click', () => {
-      selectedDateStr = cellDateStr;
-      openModal();
-    });
-
-    calendarDays.appendChild(dayCell);
-  }
+if (subtaskDateInput) {
+  subtaskDateInput.addEventListener('change', () => {
+    renderSubtaskTimeline();
+  });
 }
 
 function renderMatrixView() {
+  if (!q1List || !q2List || !q3List || !q4List) return;
   q1List.innerHTML = '';
   q2List.innerHTML = '';
   q3List.innerHTML = '';
@@ -1073,6 +1110,7 @@ function renderMatrixView() {
 }
 
 function renderOverdueView() {
+  if (!overdueList) return;
   overdueList.innerHTML = '';
   const todayStr = formatDate(new Date());
 
@@ -1151,46 +1189,47 @@ function renderOverdueView() {
 function openModal() {
   editingTaskId = null;
   const dateObj = new Date(selectedDateStr);
-  modalDateTitle.textContent = `${formatSlashDate(dateObj)} 行程管理`;
-  modalTaskDate.value = selectedDateStr;
-  startTimeInput.value = '09:00';
-  endTimeInput.value = '10:00';
-  taskInput.value = '';
-  taskDescInput.value = '';
-  importantCheckbox.checked = false;
-  addBtn.textContent = '新增行程';
+  if (modalDateTitle) modalDateTitle.textContent = `${formatSlashDate(dateObj)} 行程管理`;
+  if (modalTaskDate) modalTaskDate.value = selectedDateStr;
+  if (startTimeInput) startTimeInput.value = '09:00';
+  if (endTimeInput) endTimeInput.value = '10:00';
+  if (taskInput) taskInput.value = '';
+  if (taskDescInput) taskDescInput.value = '';
+  if (importantCheckbox) importantCheckbox.checked = false;
+  if (addBtn) addBtn.textContent = '新增行程';
   renderModalTasks();
-  taskModal.style.display = 'flex';
+  if (taskModal) taskModal.style.display = 'flex';
 }
 
 function openModalForEdit(task) {
   editingTaskId = task.id;
   selectedDateStr = task.date;
-  modalDateTitle.textContent = `編輯行程：${task.text}`;
-  modalTaskDate.value = task.date;
-  startTimeInput.value = task.startTime || '09:00';
-  endTimeInput.value = task.endTime || '10:00';
-  taskInput.value = task.text;
-  taskDescInput.value = task.description || '';
-  importantCheckbox.checked = !!task.important;
+  if (modalDateTitle) modalDateTitle.textContent = `編輯行程：${task.text}`;
+  if (modalTaskDate) modalTaskDate.value = task.date;
+  if (startTimeInput) startTimeInput.value = task.startTime || '09:00';
+  if (endTimeInput) endTimeInput.value = task.endTime || '10:00';
+  if (taskInput) taskInput.value = task.text;
+  if (taskDescInput) taskDescInput.value = task.description || '';
+  if (importantCheckbox) importantCheckbox.checked = !!task.important;
 
   const colorRadios = document.querySelectorAll('input[name="color-option"]');
   colorRadios.forEach((r) => {
     r.checked = r.value === (task.color || '#1a73e8');
   });
 
-  addBtn.textContent = '儲存修改';
+  if (addBtn) addBtn.textContent = '儲存修改';
   renderModalTasks();
-  taskModal.style.display = 'flex';
+  if (taskModal) taskModal.style.display = 'flex';
 }
 
 function closeModal() {
-  taskModal.style.display = 'none';
+  if (taskModal) taskModal.style.display = 'none';
   editingTaskId = null;
   renderView();
 }
 
 function renderModalTasks() {
+  if (!modalTaskList) return;
   modalTaskList.innerHTML = '';
   let filteredTasks = tasks.filter((t) => t.date === selectedDateStr);
   filteredTasks = sortTasksByChronologicalOrder(filteredTasks);
@@ -1348,43 +1387,53 @@ function updateCurrentTimeLine() {
 }
 
 // 事件綁定
-addBtn.addEventListener('click', saveOrAddTask);
-closeModalBtn.addEventListener('click', closeModal);
+if (addBtn) addBtn.addEventListener('click', saveOrAddTask);
+if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 
 window.addEventListener('click', (e) => {
   if (e.target === taskModal) closeModal();
-  if (e.target === courseModal) courseModal.style.display = 'none';
+  if (e.target === courseModal && courseModal) courseModal.style.display = 'none';
 });
 
-viewMonthBtn.addEventListener('click', () => {
-  currentMode = 'month';
-  setActiveNavBtn(viewMonthBtn);
-  renderView();
-});
+if (viewMonthBtn) {
+  viewMonthBtn.addEventListener('click', () => {
+    currentMode = 'month';
+    setActiveNavBtn(viewMonthBtn);
+    renderView();
+  });
+}
 
-viewWeekBtn.addEventListener('click', () => {
-  currentMode = 'week';
-  setActiveNavBtn(viewWeekBtn);
-  renderView();
-});
+if (viewWeekBtn) {
+  viewWeekBtn.addEventListener('click', () => {
+    currentMode = 'week';
+    setActiveNavBtn(viewWeekBtn);
+    renderView();
+  });
+}
 
-viewMatrixBtn.addEventListener('click', () => {
-  currentMode = 'matrix';
-  setActiveNavBtn(viewMatrixBtn);
-  renderView();
-});
+if (viewMatrixBtn) {
+  viewMatrixBtn.addEventListener('click', () => {
+    currentMode = 'matrix';
+    setActiveNavBtn(viewMatrixBtn);
+    renderView();
+  });
+}
 
-viewSubtaskBtn.addEventListener('click', () => {
-  currentMode = 'subtask';
-  setActiveNavBtn(viewSubtaskBtn);
-  renderView();
-});
+if (viewSubtaskBtn) {
+  viewSubtaskBtn.addEventListener('click', () => {
+    currentMode = 'subtask';
+    setActiveNavBtn(viewSubtaskBtn);
+    renderView();
+  });
+}
 
-viewOverdueBtn.addEventListener('click', () => {
-  currentMode = 'overdue';
-  setActiveNavBtn(viewOverdueBtn);
-  renderView();
-});
+if (viewOverdueBtn) {
+  viewOverdueBtn.addEventListener('click', () => {
+    currentMode = 'overdue';
+    setActiveNavBtn(viewOverdueBtn);
+    renderView();
+  });
+}
 
 function setActiveNavBtn(activeBtn) {
   const allBtns = document.querySelectorAll('.sidebar .nav-btn');
@@ -1425,25 +1474,31 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-prevBtn.addEventListener('click', () => {
-  if (currentMode === 'month' || currentMode === 'subtask') {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-  } else if (currentMode === 'week') {
-    currentDate.setDate(currentDate.getDate() - 7);
-  }
-  renderView();
-});
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    if (currentMode === 'month' || currentMode === 'subtask') {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+    } else if (currentMode === 'week') {
+      currentDate.setDate(currentDate.getDate() - 7);
+    }
+    renderView();
+  });
+}
 
-nextBtn.addEventListener('click', () => {
-  if (currentMode === 'month' || currentMode === 'subtask') {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-  } else if (currentMode === 'week') {
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-  renderView();
-});
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    if (currentMode === 'month' || currentMode === 'subtask') {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    } else if (currentMode === 'week') {
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+    renderView();
+  });
+}
 
-todayBtn.addEventListener('click', () => {
-  currentDate = new Date();
-  renderView();
-});
+if (todayBtn) {
+  todayBtn.addEventListener('click', () => {
+    currentDate = new Date();
+    renderView();
+  });
+}
