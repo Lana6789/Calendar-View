@@ -22,4 +22,4 @@
 
 1. **下載或 Clone 專案**：
    ```bash
-   git clone [https://github.com/your-username/mini-task-manager.git](https://github.com/your-username/mini-task-manager.git)
+   git clone [https://github.com/Lana6789/Calendar-View.git](https://github.com/Lana6789/Calendar-View.git)
