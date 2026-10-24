@@ -318,12 +318,15 @@ function calculateCurrentSemesterWeek(sem) {
   return Math.min(Math.max(Math.floor(diffDays / 7), 0), maxWeeks - 1);
 }
 
+// 核心排序：先依日期排序，若日期相同則精準依時間（08:00 比 15:00 早）進行由早至晚排序
 function sortTasksByChronologicalOrder(taskList) {
   return taskList.sort((a, b) => {
     const dateA = a.startDate || a.date || '';
     const dateB = b.startDate || b.date || '';
     if (dateA !== dateB) return dateA.localeCompare(dateB);
-    return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+    const timeA = a.startTime || '00:00';
+    const timeB = b.startTime || '00:00';
+    return timeA.localeCompare(timeB);
   });
 }
 
@@ -669,7 +672,9 @@ function renderCourseView() {
     header.textContent = formatPaddedSlashDate(dayDate);
     col.appendChild(header);
 
-    const dayCourses = (curSem.courses || []).filter((c) => Number(c.dayOfWeek) === dayOfWeek);
+    // 依據時間先後順序自動排序當天課程
+    let dayCourses = (curSem.courses || []).filter((c) => Number(c.dayOfWeek) === dayOfWeek);
+    dayCourses.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
     dayCourses.forEach((c) => {
       const key = `${curSem.id}_${c.id}_${dayDateStr}`;
@@ -956,6 +961,9 @@ if (saveCourseBtn) {
       });
     }
 
+    // 儲存後自動按時間序排列所有課程
+    curSem.courses.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+
     saveAllDataToFirebase();
     if (courseModal) courseModal.style.display = 'none';
     renderCourseMasterList();
@@ -983,7 +991,9 @@ function renderCourseMasterList() {
   const curSem = getCurrentSemester();
   if (!curSem) return;
 
-  (curSem.courses || []).forEach((c) => {
+  const masterCourses = [...(curSem.courses || [])].sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+
+  masterCourses.forEach((c) => {
     const li = document.createElement('li');
     li.className = 'modal-task-item';
     const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
