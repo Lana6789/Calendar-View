@@ -146,11 +146,28 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title-guide-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
 }
 
 .left-controls h2 {
   font-size: 1.25rem;
   color: #3c4043;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.view-guide-text {
+  font-size: 0.82rem;
+  color: #5f6368;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .btn-secondary {
@@ -254,38 +271,148 @@ body {
   overflow-y: auto;
 }
 
+.color-legend-wrapper {
+  margin-top: 15px;
+}
+
 .color-legend-bar {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
   background-color: #f8f9fa;
   border-top: 1px solid #dadce0;
+  border-bottom: 1px solid #dadce0;
   font-size: 0.85rem;
   color: #3c4043;
 }
 
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .legend-title {
-  font-weight: bold;
+  font-weight: 600;
+  color: #202124;
+}
+
+.legend-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-legend-action {
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  border: 1px solid #dadce0;
+  background-color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #3c4043;
+  transition: all 0.15s;
+}
+
+.btn-legend-action:hover {
+  background-color: #f1f3f4;
+  border-color: #bdc1c6;
 }
 
 .legend-items {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .legend-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  background: #ffffff;
+  padding: 3px 10px;
+  border-radius: 14px;
+  border: 1px solid #dadce0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.legend-item:hover {
+  border-color: #1a73e8;
+  background-color: #f8fafd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
+}
+
+.legend-label-text {
+  font-weight: 500;
+  color: #3c4043;
+}
+
+.legend-edit-icon {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.legend-item:hover .legend-edit-icon {
+  opacity: 1;
+}
+
+.legend-del-btn {
+  background: none;
+  border: none;
+  color: #d93025;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.legend-del-btn:hover {
+  opacity: 1;
+}
+
+.show-legend-container {
+  margin-top: 10px;
+  padding: 4px 8px;
+}
+
+.btn-add-color {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px dashed #70757a;
+  background-color: #ffffff;
+  color: #5f6368;
+  font-size: 1.1rem;
+  font-weight: bold;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-add-color:hover {
+  border-color: #1a73e8;
+  color: #1a73e8;
+  background-color: #e8f0fe;
 }
 
 .task-badge {
@@ -344,11 +471,18 @@ body {
   width: 100%;
 }
 
+/* 5. Week View 修改 */
 .week-header-row {
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
   border-bottom: 1px solid #dadce0;
   background: #ffffff;
+  box-sizing: border-box;
+
+  /* 新增：Sticky 定位，讓滑動時標頭保持固定且連在一起 */
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .time-corner {
@@ -383,7 +517,7 @@ body {
 
 .week-body-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
 }
 
 .week-grid {
@@ -432,7 +566,7 @@ body {
   padding: 4px 6px;
   border-radius: 6px;
   font-size: 0.75rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -444,7 +578,7 @@ body {
 .week-task-card:hover {
   transform: scale(1.02);
   z-index: 20 !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .card-title {
@@ -467,38 +601,6 @@ body {
   box-shadow: none;
 }
 
-.time-indicator-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #ea4335;
-  z-index: 10;
-}
-
-.time-indicator-line::before {
-  content: '';
-  position: absolute;
-  left: -4px;
-  top: -3px;
-  width: 8px;
-  height: 8px;
-  background-color: #ea4335;
-  border-radius: 50%;
-}
-
-.time-badge {
-  position: absolute;
-  left: -58px;
-  top: -8px;
-  background-color: #ea4335;
-  color: #ffffff;
-  font-size: 0.7rem;
-  padding: 1px 4px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
 /* 6. Eisenhower Matrix View */
 #matrix-view {
   padding: 16px;
@@ -511,7 +613,18 @@ body {
   grid-template-rows: 1fr 1fr;
   gap: 16px;
   height: 100%;
+
+  /* 新增：定義桌面端的象限分佈 */
+  grid-template-areas: 
+    "q2 q1"
+    "q3 q4";
 }
+
+/* 新增：將各象限綁定至對應的 Area */
+.matrix-box.q1 { grid-area: q1; }
+.matrix-box.q2 { grid-area: q2; }
+.matrix-box.q3 { grid-area: q3; }
+.matrix-box.q4 { grid-area: q4; }
 
 .matrix-box {
   background-color: #fef7e0;
@@ -545,7 +658,7 @@ body {
   background-color: #ffffff;
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.15s;
 }
@@ -600,7 +713,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .overdue-left {
@@ -715,7 +828,13 @@ body {
   background-color: #1e8449;
 }
 
-/* 9. Course View (115-1) */
+/* 9. Course View */
+.course-page-container {
+  padding: 20px;
+  max-width: 95%;
+  margin: 0 auto;
+}
+
 .course-header-bar {
   display: flex;
   justify-content: space-between;
@@ -773,7 +892,7 @@ body {
   border-radius: 6px;
   padding: 8px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -796,7 +915,8 @@ body {
   color: #202124;
 }
 
-.course-time, .course-loc {
+.course-time,
+.course-loc {
   font-size: 0.75rem;
   color: #5f6368;
 }
@@ -810,10 +930,12 @@ body {
 
 .status-cancelled {
   color: #70757a !important;
+  text-decoration: line-through;
 }
 
 .status-exam {
   color: #d93025 !important;
+  font-weight: bold;
 }
 
 .status-sub-title {
@@ -882,7 +1004,13 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 8px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.timeline-row:hover {
+  background-color: #f1f6fd;
 }
 
 .timeline-time-col {
@@ -900,6 +1028,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
 }
 
 .timeline-text {
@@ -959,6 +1088,7 @@ body {
     opacity: 0;
     transform: translateY(12px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1049,7 +1179,7 @@ body {
   transition: transform 0.15s, border-color 0.15s;
 }
 
-.color-picker-group input[type="radio"]:checked + .color-circle {
+.color-picker-group input[type="radio"]:checked+.color-circle {
   border-color: #202124;
   transform: scale(1.15);
 }
@@ -1099,12 +1229,9 @@ body {
   padding: 16px 0;
 }
 
-/* ==========================================================================
-   11. 響應式網頁設計 (Responsive Design for Mobile Phones & Tablets)
-   ========================================================================== */
-
-/* 觸控與全螢幕體驗優化 */
-html, body {
+/* 11. 響應式網頁設計 */
+html,
+body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1123,8 +1250,29 @@ html, body {
 }
 
 @media (max-width: 768px) {
-  body {
-    overflow: auto;
+  #matrix-view {
+    padding: 10px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .matrix-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 12px;
+    height: auto;
+
+    /* 手機直式由上至下排列：第一象限(Q1) -> 第四象限(Q4) -> 第二象限(Q2) -> 第三象限(Q3) */
+    grid-template-areas: 
+      "q1"
+      "q4"
+      "q2"
+      "q3";
+  }
+
+  .matrix-box {
+    min-height: 180px;
+    max-height: 320px;
   }
 
   body.sidebar-open {
@@ -1140,7 +1288,6 @@ html, body {
     overflow: hidden;
   }
 
-  /* 行動版側邊欄抽屜 (Off-canvas Drawer) */
   .sidebar {
     position: fixed;
     top: 0;
@@ -1189,7 +1336,6 @@ html, body {
     font-size: 1.3rem;
   }
 
-  /* 遮罩層 (Backdrop) */
   .sidebar-backdrop {
     display: block;
     position: fixed;
@@ -1208,19 +1354,16 @@ html, body {
     pointer-events: auto;
   }
 
-  /* 主內容區域 */
   .main-content {
     width: 100%;
     height: 100%;
     overflow: hidden;
   }
 
-  /* 漢堡選單按鈕 */
   .mobile-menu-btn {
     display: inline-flex;
   }
 
-  /* 頂部導航控制列 */
   .calendar-controls {
     padding: 8px 12px;
     min-height: 50px;
@@ -1255,7 +1398,6 @@ html, body {
     height: 30px;
   }
 
-  /* 1. 主月檢視 (Month View) */
   .calendar-weekdays {
     font-size: 0.76rem;
     padding: 6px 0;
@@ -1266,7 +1408,7 @@ html, body {
   }
 
   .day-cell {
-    padding: 2px 2px 4px 2px;
+    padding: 2px;
     min-width: 0;
   }
 
@@ -1306,7 +1448,6 @@ html, body {
     height: 10px;
   }
 
-  /* 2. 周檢視 (Week View) */
   .week-scroll-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1340,7 +1481,6 @@ html, body {
     font-size: 0.62rem;
   }
 
-  /* 3. 艾森豪象限表 (Eisenhower Matrix) */
   #matrix-view {
     padding: 10px;
     height: 100%;
@@ -1365,7 +1505,6 @@ html, body {
     padding-bottom: 4px;
   }
 
-  /* 4. 逾期未完成事項 (Overdue View) */
   .overdue-container {
     padding: 12px;
   }
@@ -1410,7 +1549,6 @@ html, body {
     font-size: 0.85rem;
   }
 
-  /* 5. 任務細項安排 (Subtask View) */
   #subtask-calendar-days {
     grid-auto-rows: minmax(70px, 1fr);
   }
@@ -1462,7 +1600,6 @@ html, body {
     align-self: flex-end;
   }
 
-  /* 6. 115-1 課表 (Course View) */
   .course-header-bar {
     flex-direction: column;
     align-items: stretch;
@@ -1504,7 +1641,6 @@ html, body {
     min-height: 380px;
   }
 
-  /* 7. 彈出視窗 (Modals) */
   .modal {
     padding: 12px;
     align-items: center;
@@ -1535,7 +1671,7 @@ html, body {
   .form-row input[type="time"],
   .form-row select,
   .form-row textarea {
-    font-size: 16px; /* 防止 iOS 點擊輸入框時自動縮放畫面 */
+    font-size: 16px;
   }
 
   .form-row input[type="text"],
@@ -1546,10 +1682,6 @@ html, body {
   .status-btn-group {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-  }
-
-  .status-btn-group:last-of-type {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .att-status-btn {
@@ -1582,5 +1714,31 @@ html, body {
   .color-circle {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* 12. 學期方案與多課程頁面補充樣式 */
+.semester-tabs-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.semester-tabs-bar::-webkit-scrollbar-thumb {
+  background: #dadce0;
+  border-radius: 4px;
+}
+
+#active-semester-panel {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
