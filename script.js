@@ -1,10 +1,11 @@
-// Firebase SDK 模組匯入
+// Firebase SDK 模組匯入 (新增 Auth 模組)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // Firebase 設定資訊
 const firebaseConfig = {
-  apiKey: "AIzaSyC1-PdiVSf86rt9BiCWCJ5FyKtXQLqUbVs",
+  apiKey: "AIzaSyC1-PdiVSf86rt9BiCWJC5FyKtXQLqUbVs",
   authDomain: "to-do-4fab9.firebaseapp.com",
   projectId: "to-do-4fab9",
   storageBucket: "to-do-4fab9.firebasestorage.app",
@@ -13,12 +14,23 @@ const firebaseConfig = {
   measurementId: "G-KRJE3K4Q3Q"
 };
 
-// 初始化 Firebase 與 Firestore
+// 初始化 Firebase、Firestore 與 Auth
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
-// 定義單一文件儲存路徑
-const docRef = doc(db, "appData", "miniTaskManagerData");
+// 全域使用者與資料監聽控制
+let currentUser = null;
+let unsubscribeFirestore = null;
+let docRef = null;
+
+// DOM 元素：Auth 登入相關
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userInfoSection = document.getElementById('user-info');
+const userPhoto = document.getElementById('user-photo');
+const userName = document.getElementById('user-name');
 
 // 1. DOM 元素取得
 const viewTitle = document.getElementById('view-title');
@@ -102,7 +114,7 @@ const semesterStart = new Date('2026-09-07');
 const semesterEnd = new Date('2026-12-25');
 let currentWeekOffset = 0;
 
-// 核心資料變數 (初始為空陣列/物件)
+// 核心資料變數
 let tasks = [];
 let subtaskPageTasks = [];
 let courses = [];
@@ -113,9 +125,78 @@ subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
 
 // ------------------------------------------------------------------
-// Firebase 數據同步邏輯 (已移除移轉舊資料程式碼)
+// Firebase Auth 登入 / 登出邏輯
 // ------------------------------------------------------------------
+
+loginBtn.addEventListener('click', () => {
+  signInWithPopup(auth, googleProvider).catch((err) => {
+    console.error("登入失敗:", err);
+    alert("Google 登入失敗，請確認 Firebase Console 已啟用 Google 驗證服務！");
+  });
+});
+
+logoutBtn.addEventListener('click', () => {
+  signOut(auth).then(() => {
+    alert("已成功登出！");
+  });
+});
+
+// 監聽使用者 Auth 登入狀態
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // 已登入狀態
+    currentUser = user;
+    userPhoto.src = user.photoURL || '';
+    userName.textContent = user.displayName || '使用者';
+    userInfoSection.style.display = 'flex';
+    loginBtn.style.display = 'none';
+
+    // 動態定錨當前使用者的專屬資料路徑
+    docRef = doc(db, "users", currentUser.uid, "data", "miniTaskManagerData");
+
+    // 啟動專屬資料雲端監聽
+    if (unsubscribeFirestore) unsubscribeFirestore();
+    unsubscribeFirestore = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const cloudData = snapshot.data();
+        tasks = cloudData.tasks || [];
+        subtaskPageTasks = cloudData.subtaskPageTasks || [];
+        courses = cloudData.courses || [];
+        courseAttendance = cloudData.courseAttendance || {};
+      } else {
+        // 如果是新使用者，初始清空
+        tasks = [];
+        subtaskPageTasks = [];
+        courses = [];
+        courseAttendance = {};
+      }
+      renderView();
+    });
+
+  } else {
+    // 未登入狀態
+    currentUser = null;
+    userInfoSection.style.display = 'none';
+    loginBtn.style.display = 'flex';
+
+    if (unsubscribeFirestore) unsubscribeFirestore();
+    docRef = null;
+
+    // 清空記憶體資料，呈現空白狀態
+    tasks = [];
+    subtaskPageTasks = [];
+    courses = [];
+    courseAttendance = {};
+    renderView();
+  }
+});
+
 function saveAllDataToFirebase() {
+  if (!currentUser || !docRef) {
+    alert("請先登入 Google 帳號以儲存或更動行程資料！");
+    return;
+  }
+
   const payload = {
     tasks: tasks,
     subtaskPageTasks: subtaskPageTasks,
@@ -128,20 +209,6 @@ function saveAllDataToFirebase() {
     console.error("Firebase 寫入失敗:", err);
   });
 }
-
-// 監聽 Firebase 雲端資料變更
-onSnapshot(docRef, (snapshot) => {
-  if (snapshot.exists()) {
-    const cloudData = snapshot.data();
-    tasks = cloudData.tasks || [];
-    subtaskPageTasks = cloudData.subtaskPageTasks || [];
-    courses = cloudData.courses || [];
-    courseAttendance = cloudData.courseAttendance || {};
-  }
-  renderView();
-}, (error) => {
-  console.warn("Firebase 連線受限:", error);
-});
 
 // Helper Functions
 function formatDate(date) {

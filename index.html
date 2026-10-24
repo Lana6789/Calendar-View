@@ -62,22 +62,47 @@
                     </div>
                     <h2 id="view-title">2026年10月</h2>
                 </div>
+
+                <!-- 新增：右側 Google 登入 / 用戶控制區 -->
+                <div class="user-auth-section"
+                    style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <div id="user-info" style="display: none; align-items: center; gap: 8px;">
+                        <img id="user-photo" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%;">
+                        <span id="user-name" style="font-size: 0.9rem; font-weight: 500;"></span>
+                        <button id="logout-btn" class="btn-secondary"
+                            style="padding: 4px 10px; font-size: 0.8rem;">登出</button>
+                    </div>
+                    <button id="login-btn" class="btn-secondary"
+                        style="background-color: #4285f4; color: white; border: none; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        🔑 Google 帳號登入
+                    </button>
+                </div>
             </header>
 
             <!-- 3. Month View -->
             <main id="month-view" class="view-container">
                 <div class="calendar-weekdays">
-                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                    <div>週日</div>
+                    <div>週一</div>
+                    <div>週二</div>
+                    <div>週三</div>
+                    <div>週四</div>
+                    <div>週五</div>
+                    <div>週六</div>
                 </div>
                 <div class="calendar-days" id="calendar-days"></div>
 
                 <div class="color-legend-bar">
                     <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
                     <div class="legend-items">
-                        <span class="legend-item"><span class="legend-dot" style="background-color: #1a73e8;"></span>藍色：自己的行程</span>
-                        <span class="legend-item"><span class="legend-dot" style="background-color: #f2994a;"></span>橘色：報告</span>
-                        <span class="legend-item"><span class="legend-dot" style="background-color: #eb5757;"></span>紅色：期中/期末考</span>
-                        <span class="legend-item"><span class="legend-dot" style="background-color: #9b51e0;"></span>紫色：社團/校園大使</span>
+                        <span class="legend-item"><span class="legend-dot"
+                                style="background-color: #1a73e8;"></span>藍色：自己的行程</span>
+                        <span class="legend-item"><span class="legend-dot"
+                                style="background-color: #f2994a;"></span>橘色：報告</span>
+                        <span class="legend-item"><span class="legend-dot"
+                                style="background-color: #eb5757;"></span>紅色：期中/期末考</span>
+                        <span class="legend-item"><span class="legend-dot"
+                                style="background-color: #9b51e0;"></span>紫色：社團/校園大使</span>
                     </div>
                 </div>
             </main>
@@ -132,7 +157,13 @@
             <!-- 7. 任務細項安排 -->
             <main id="subtask-view" class="view-container hidden">
                 <div class="calendar-weekdays">
-                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                    <div>週日</div>
+                    <div>週一</div>
+                    <div>週二</div>
+                    <div>週三</div>
+                    <div>週四</div>
+                    <div>週五</div>
+                    <div>週六</div>
                 </div>
                 <div class="calendar-days" id="subtask-calendar-days"></div>
 
@@ -153,7 +184,8 @@
                                 <input type="time" id="subtask-end-time" value="10:00">
                             </div>
                             <div class="form-row">
-                                <input type="text" id="subtask-task-input" placeholder="輸入頁面專屬細項任務..." autocomplete="off">
+                                <input type="text" id="subtask-task-input" placeholder="輸入頁面專屬細項任務..."
+                                    autocomplete="off">
                             </div>
                             <div class="form-row">
                                 <textarea id="subtask-desc-input" placeholder="輸入詳細說明 / 備註..." rows="2"></textarea>
@@ -173,13 +205,18 @@
                         <span id="course-week-title" class="course-week-title">第 1 週 (9/7 - 9/11)</span>
                         <button id="course-next-week" class="btn-secondary">下一週 &gt;</button>
                     </div>
-                    <button id="open-add-course-btn" class="btn-secondary" style="background-color: #1a73e8; color: white;">+ 新增學期課程</button>
+                    <button id="open-add-course-btn" class="btn-secondary"
+                        style="background-color: #1a73e8; color: white;">+ 新增學期課程</button>
                 </div>
 
                 <!-- 課表顯示網格 (週一至週五) -->
                 <div class="course-grid-container">
                     <div class="calendar-weekdays course-weekdays">
-                        <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div>
+                        <div>週一</div>
+                        <div>週二</div>
+                        <div>週三</div>
+                        <div>週四</div>
+                        <div>週五</div>
                     </div>
                     <div class="course-days-grid" id="course-days-grid"></div>
                 </div>
@@ -215,16 +252,20 @@
                         <label>色彩分類：</label>
                         <div class="color-picker-group">
                             <input type="radio" name="color-option" id="c-blue" value="#1a73e8" checked>
-                            <label for="c-blue" class="color-circle" style="background-color: #1a73e8;" title="自己的行程"></label>
+                            <label for="c-blue" class="color-circle" style="background-color: #1a73e8;"
+                                title="自己的行程"></label>
 
                             <input type="radio" name="color-option" id="c-yellow" value="#f2994a">
-                            <label for="c-yellow" class="color-circle" style="background-color: #f2994a;" title="報告"></label>
+                            <label for="c-yellow" class="color-circle" style="background-color: #f2994a;"
+                                title="報告"></label>
 
                             <input type="radio" name="color-option" id="c-red" value="#eb5757">
-                            <label for="c-red" class="color-circle" style="background-color: #eb5757;" title="期中/期末考"></label>
+                            <label for="c-red" class="color-circle" style="background-color: #eb5757;"
+                                title="期中/期末考"></label>
 
                             <input type="radio" name="color-option" id="c-purple" value="#9b51e0">
-                            <label for="c-purple" class="color-circle" style="background-color: #9b51e0;" title="社團/校園大使"></label>
+                            <label for="c-purple" class="color-circle" style="background-color: #9b51e0;"
+                                title="社團/校園大使"></label>
                         </div>
                     </div>
                     <div class="form-row">
@@ -278,15 +319,19 @@
                         <input type="color" id="c-color" value="#ffb6c1">
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button id="save-course-btn" style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存課程資訊</button>
-                        <button id="delete-course-btn" style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除課程</button>
+                        <button id="save-course-btn"
+                            style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存課程資訊</button>
+                        <button id="delete-course-btn"
+                            style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除課程</button>
                     </div>
                 </div>
 
                 <!-- 單週特定日期出缺勤與考試設定區塊 -->
-                <div id="attendance-section" style="display: none; margin-top: 16px; border-top: 1px solid #dadce0; padding-top: 12px;">
-                    <h4 id="att-section-title" style="font-size: 0.95rem; margin-bottom: 8px; color: #3c4043;">日期 出缺席與考試狀態</h4>
-                    
+                <div id="attendance-section"
+                    style="display: none; margin-top: 16px; border-top: 1px solid #dadce0; padding-top: 12px;">
+                    <h4 id="att-section-title" style="font-size: 0.95rem; margin-bottom: 8px; color: #3c4043;">日期
+                        出缺席與考試狀態</h4>
+
                     <!-- 出席紀錄區塊 -->
                     <div class="status-sub-title">📌 出缺席紀錄</div>
                     <div class="status-btn-group">
