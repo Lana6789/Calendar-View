@@ -1,3 +1,25 @@
+// Firebase SDK 模組匯入
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ⚠️ 請填入您的 Firebase 設定資訊 (Firebase Config)
+const firebaseConfig = {
+  apiKey: "AIzaSyC1-PdiVSf86rt9BiCWCJ5FyKtXQLqUbVs",
+  authDomain: "to-do-4fab9.firebaseapp.com",
+  projectId: "to-do-4fab9",
+  storageBucket: "to-do-4fab9.firebasestorage.app",
+  messagingSenderId: "546507802862",
+  appId: "1:546507802862:web:d86e905dd9b24052a34bff",
+  measurementId: "G-KRJE3K4Q3Q"
+};
+
+// 初始化 Firebase 與 Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 定義單一文件儲存路徑（方便管理整體專案資料）
+const docRef = doc(db, "appData", "miniTaskManagerData");
+
 // 1. DOM 元素取得
 const viewTitle = document.getElementById('view-title');
 const prevBtn = document.getElementById('prev-btn');
@@ -72,24 +94,104 @@ let currentMode = 'month'; // 'month' | 'week' | 'matrix' | 'overdue' | 'subtask
 let currentDate = new Date();
 let selectedDateStr = formatDate(new Date());
 let editingTaskId = null;
-let editingCourseId = null; // 正在編輯的 Course ID
-let selectedAttDateStr = ''; // 正在編輯出缺勤的 Date String
+let editingCourseId = null;
+let selectedAttDateStr = '';
 
 // 學期時間範圍：2026/09/07 - 2026/12/25 (115-1，16週)
 const semesterStart = new Date('2026-09-07');
 const semesterEnd = new Date('2026-12-25');
-let currentWeekOffset = 0; // 0 代表第1週 (0~15 共 16 週)
+let currentWeekOffset = 0;
 
-let tasks = loadTasks(); // 主月檢視的核心任務
-let subtaskPageTasks = loadSubtaskPageTasks();
-let courses = loadCourses(); // 課表定義 Master List
-let courseAttendance = loadCourseAttendance(); // 每週各堂課狀態 Record
+let tasks = [];
+let subtaskPageTasks = [];
+let courses = getDefaultCourses();
+let courseAttendance = {};
 
 // 初始化
 subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
-renderView();
-setInterval(updateCurrentTimeLine, 60000);
+
+// 預設課程清單
+function getDefaultCourses() {
+  return [
+    { id: 'c1', name: '組織行為-E', location: 'E1-306', dayOfWeek: 1, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
+    { id: 'c2', name: '邏輯思考概論-A', location: 'TR-412-1', dayOfWeek: 1, startTime: '13:00', endTime: '15:00', color: '#ffb6c1' },
+    { id: 'c3', name: '體育 (網球) (上)', location: '', dayOfWeek: 1, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
+    { id: 'c4', name: '管理與企業倫理', location: 'IB-510-2', dayOfWeek: 2, startTime: '09:00', endTime: '12:00', color: '#56ccf2' },
+    { id: 'c5', name: '經濟學 (上)', location: 'IB-409-1', dayOfWeek: 2, startTime: '13:20', endTime: '16:20', color: '#56ccf2' },
+    { id: 'c6', name: '口語表達-D', location: 'T4-304', dayOfWeek: 2, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
+    { id: 'c7', name: '英文小老師', location: '', dayOfWeek: 3, startTime: '10:00', endTime: '11:00', color: '#7bc676' },
+    { id: 'c8', name: '英語口語訓練 (上)', location: 'TR-611', dayOfWeek: 4, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
+    { id: 'c9', name: '英文字彙與閱讀 (上)', location: 'TR-612', dayOfWeek: 4, startTime: '10:00', endTime: '12:00', color: '#f2994a' },
+    { id: 'c10', name: '數位商業與行銷', location: 'MA-206', dayOfWeek: 4, startTime: '15:30', endTime: '18:30', color: '#56ccf2' },
+    { id: 'c11', name: '商業品牌故事力：英語實務寫作', location: 'T4-302', dayOfWeek: 5, startTime: '08:00', endTime: '10:00', color: '#56ccf2' },
+    { id: 'c12', name: '新生中文說寫專題', location: 'TR-212', dayOfWeek: 5, startTime: '13:00', endTime: '16:00', color: '#ffb6c1' }
+  ];
+}
+
+// ------------------------------------------------------------------
+// Firebase 實時同步與資料遷移 (Migration) 核心邏輯
+// ------------------------------------------------------------------
+
+function saveAllDataToFirebase() {
+  const payload = {
+    tasks: tasks,
+    subtaskPageTasks: subtaskPageTasks,
+    courses: courses,
+    courseAttendance: courseAttendance,
+    updatedAt: new Date().toISOString()
+  };
+
+  setDoc(docRef, payload, { merge: true }).catch((err) => {
+    console.error("Firebase 寫入失敗:", err);
+  });
+}
+
+// 自動遷移 LocalStorage 舊資料至 Firebase
+async function checkAndMigrateLocalStorage() {
+  const isMigrated = localStorage.getItem('firebase_migrated_v1');
+  if (isMigrated) return false;
+
+  const localTasks = localStorage.getItem('tasks');
+  const localSubtasks = localStorage.getItem('subtask_page_tasks');
+  const localCourses = localStorage.getItem('master_courses');
+  const localAtt = localStorage.getItem('course_attendance');
+
+  if (localTasks || localSubtasks || localCourses || localAtt) {
+    const migratedData = {
+      tasks: localTasks ? JSON.parse(localTasks) : [],
+      subtaskPageTasks: localSubtasks ? JSON.parse(localSubtasks) : [],
+      courses: localCourses ? JSON.parse(localCourses) : getDefaultCourses(),
+      courseAttendance: localAtt ? JSON.parse(localAtt) : {},
+      migratedAt: new Date().toISOString()
+    };
+
+    await setDoc(docRef, migratedData, { merge: true });
+    localStorage.setItem('firebase_migrated_v1', 'true');
+    console.log("舊資料成功轉移至 Firebase！");
+    return true;
+  }
+  return false;
+}
+
+// 開啟 Firebase 實時監聽 (Realtime Listener)
+onSnapshot(docRef, async (snapshot) => {
+  if (snapshot.exists()) {
+    const data = snapshot.data();
+    tasks = data.tasks || [];
+    subtaskPageTasks = data.subtaskPageTasks || [];
+    courses = data.courses || getDefaultCourses();
+    courseAttendance = data.courseAttendance || {};
+    renderView();
+  } else {
+    // 若雲端無資料，先檢查是否有 LocalStorage 舊資料需要轉移
+    const didMigrate = await checkAndMigrateLocalStorage();
+    if (!didMigrate) {
+      // 若無舊資料，初始同步預設資料
+      saveAllDataToFirebase();
+    }
+  }
+});
 
 // Helper Functions
 function formatDate(date) {
@@ -111,56 +213,20 @@ function formatPaddedSlashDate(date) {
   return `${month}/${day}`;
 }
 
-function loadTasks() {
-  const saved = localStorage.getItem('tasks');
-  return saved ? JSON.parse(saved) : [];
-}
-
 function saveTasks() {
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-}
-
-function loadSubtaskPageTasks() {
-  const saved = localStorage.getItem('subtask_page_tasks');
-  return saved ? JSON.parse(saved) : [];
+  saveAllDataToFirebase();
 }
 
 function saveSubtaskPageTasks() {
-  localStorage.setItem('subtask_page_tasks', JSON.stringify(subtaskPageTasks));
-}
-
-// 載入預設課程（將原本紅色的課程全數改為淡粉紅色 #ffb6c1）
-function loadCourses() {
-  const saved = localStorage.getItem('master_courses');
-  if (saved) return JSON.parse(saved);
-
-  return [
-    { id: 'c1', name: '組織行為-E', location: 'E1-306', dayOfWeek: 1, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
-    { id: 'c2', name: '邏輯思考概論-A', location: 'TR-412-1', dayOfWeek: 1, startTime: '13:00', endTime: '15:00', color: '#ffb6c1' },
-    { id: 'c3', name: '體育 (網球) (上)', location: '', dayOfWeek: 1, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
-    { id: 'c4', name: '管理與企業倫理', location: 'IB-510-2', dayOfWeek: 2, startTime: '09:00', endTime: '12:00', color: '#56ccf2' },
-    { id: 'c5', name: '經濟學 (上)', location: 'IB-409-1', dayOfWeek: 2, startTime: '13:20', endTime: '16:20', color: '#56ccf2' },
-    { id: 'c6', name: '口語表達-D', location: 'T4-304', dayOfWeek: 2, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
-    { id: 'c7', name: '英文小老師', location: '', dayOfWeek: 3, startTime: '10:00', endTime: '11:00', color: '#7bc676' },
-    { id: 'c8', name: '英語口語訓練 (上)', location: 'TR-611', dayOfWeek: 4, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
-    { id: 'c9', name: '英文字彙與閱讀 (上)', location: 'TR-612', dayOfWeek: 4, startTime: '10:00', endTime: '12:00', color: '#f2994a' },
-    { id: 'c10', name: '數位商業與行銷', location: 'MA-206', dayOfWeek: 4, startTime: '15:30', endTime: '18:30', color: '#56ccf2' },
-    { id: 'c11', name: '商業品牌故事力：英語實務寫作', location: 'T4-302', dayOfWeek: 5, startTime: '08:00', endTime: '10:00', color: '#56ccf2' },
-    { id: 'c12', name: '新生中文說寫專題', location: 'TR-212', dayOfWeek: 5, startTime: '13:00', endTime: '16:00', color: '#ffb6c1' }
-  ];
+  saveAllDataToFirebase();
 }
 
 function saveCourses() {
-  localStorage.setItem('master_courses', JSON.stringify(courses));
-}
-
-function loadCourseAttendance() {
-  const saved = localStorage.getItem('course_attendance');
-  return saved ? JSON.parse(saved) : {};
+  saveAllDataToFirebase();
 }
 
 function saveCourseAttendance() {
-  localStorage.setItem('course_attendance', JSON.stringify(courseAttendance));
+  saveAllDataToFirebase();
 }
 
 // 計算今天落於學期第幾週
@@ -265,7 +331,7 @@ function getActiveCourseEventsForDate(dateStr) {
         text: isExam ? `📝 ${c.name} ${status}` : `📚 ${c.name} (${c.location || ''})`,
         startTime: c.startTime,
         endTime: c.endTime,
-        color: isExam ? '#eb5757' : (c.color || '#ffb6c1'), // 考試顯示鮮紅色，平時顯示課程代表色
+        color: isExam ? '#eb5757' : (c.color || '#ffb6c1'),
         date: dateStr,
         isCourse: true
       });
@@ -312,7 +378,6 @@ function renderCourseView() {
       card.className = 'course-card';
       if (status === '停課') card.classList.add('cancelled');
 
-      // 只要是期中考或期末考，整張卡片顯示醒目紅色邊框與背景
       if (status === '期中考' || status === '期末考') {
         card.style.backgroundColor = '#fce8e6';
         card.style.borderLeft = '5px solid #eb5757';
@@ -361,7 +426,6 @@ function openCourseEditModal(course = null, dateStr = '') {
       const currentAtt = courseAttendance[`${course.id}_${dateStr}`] || '出席';
       attSectionTitle.textContent = `日期 ${formatSlashDate(dateObj)} 出缺席與考試狀態 (目前：${currentAtt})`;
 
-      // 更新按鈕的 active 狀態
       updateModalButtonStates(currentAtt);
     } else {
       attendanceSection.style.display = 'none';
@@ -397,7 +461,7 @@ function updateModalButtonStates(currentStatus) {
   });
 }
 
-// 點擊出缺席與期中/期末考按鈕邏輯 (切換與點擊取消功能)
+// 出缺席與考試按鈕監聽
 document.querySelectorAll('.att-status-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     if (!editingCourseId || !selectedAttDateStr) return;
@@ -407,26 +471,20 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
     const course = courses.find((c) => c.id === editingCourseId);
 
     let newStatus = clickedStatus;
-
-    // 如果點擊目前已選取的狀態，代表「取消選擇」，自動恢復為「出席」
     if (prevStatus === clickedStatus) {
       newStatus = '出席';
     }
 
     courseAttendance[key] = newStatus;
-    saveCourseAttendance();
 
-    // 處理同步至「主月檢視」的考試行程
     if (course) {
       const midExamTitle = `${course.name} 期中考`;
       const finalExamTitle = `${course.name} 期末考`;
 
-      // 先先清除舊的同日對應考試行程
       tasks = tasks.filter(
         (t) => !(t.date === selectedAttDateStr && (t.text === midExamTitle || t.text === finalExamTitle))
       );
 
-      // 若新狀態為考試，新增紅色考試行程至主月檢視
       if (newStatus === '期中考' || newStatus === '期末考') {
         const examTitle = `${course.name} ${newStatus}`;
         tasks.push({
@@ -435,15 +493,15 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
           description: `課堂 ${newStatus} (${course.location || ''})`,
           startTime: course.startTime,
           endTime: course.endTime,
-          color: '#eb5757', // 鮮紅色
+          color: '#eb5757',
           important: true,
           completed: false,
           date: selectedAttDateStr
         });
       }
-      saveTasks();
     }
 
+    saveAllDataToFirebase();
     courseModal.style.display = 'none';
     renderCourseView();
   });
@@ -552,7 +610,6 @@ courseNextWeekBtn.addEventListener('click', () => {
   }
 });
 
-// 點擊「115-1」側邊欄時，自動跳至當週
 viewCourseBtn.addEventListener('click', () => {
   currentMode = 'course';
   currentWeekOffset = calculateCurrentSemesterWeek();
@@ -662,7 +719,6 @@ function renderWeekView() {
       if (!task.completed && task.color) {
         card.style.backgroundColor = task.color;
         card.style.borderLeft = `4px solid ${task.color}`;
-        // 深淺字體顏色優化：若色彩為淡粉色則使用深色字
         card.style.color = (task.color === '#ffb6c1' || task.color === '#fff0f3') ? '#202124' : '#ffffff';
       }
 
@@ -1388,7 +1444,6 @@ if (sidebarBackdrop) {
   sidebarBackdrop.addEventListener('click', closeSidebar);
 }
 
-// 支援鍵盤 Escape 鍵快速關閉所有浮層/選單
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeSidebar();
