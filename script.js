@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ⚠️ 請填入您的 Firebase 設定資訊 (Firebase Config)
+// Firebase 設定資訊
 const firebaseConfig = {
   apiKey: "AIzaSyC1-PdiVSf86rt9BiCWCJ5FyKtXQLqUbVs",
   authDomain: "to-do-4fab9.firebaseapp.com",
@@ -17,7 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 定義單一文件儲存路徑（方便管理整體專案資料）
+// 定義單一文件儲存路徑
 const docRef = doc(db, "appData", "miniTaskManagerData");
 
 // 1. DOM 元素取得
@@ -90,49 +90,31 @@ const addBtn = document.getElementById('add-btn');
 const modalTaskList = document.getElementById('modal-task-list');
 
 // 全域狀態
-let currentMode = 'month'; // 'month' | 'week' | 'matrix' | 'overdue' | 'subtask' | 'course'
+let currentMode = 'month';
 let currentDate = new Date();
 let selectedDateStr = formatDate(new Date());
 let editingTaskId = null;
 let editingCourseId = null;
 let selectedAttDateStr = '';
 
-// 學期時間範圍：2026/09/07 - 2026/12/25 (115-1，16週)
+// 學期時間範圍：2026/09/07 - 2026/12/25
 const semesterStart = new Date('2026-09-07');
 const semesterEnd = new Date('2026-12-25');
 let currentWeekOffset = 0;
 
+// 核心資料變數 (初始為空陣列/物件)
 let tasks = [];
 let subtaskPageTasks = [];
-let courses = getDefaultCourses();
+let courses = [];
 let courseAttendance = {};
 
-// 初始化
+// 頁面初始化
 subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
 
-// 預設課程清單
-function getDefaultCourses() {
-  return [
-    { id: 'c1', name: '組織行為-E', location: 'E1-306', dayOfWeek: 1, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
-    { id: 'c2', name: '邏輯思考概論-A', location: 'TR-412-1', dayOfWeek: 1, startTime: '13:00', endTime: '15:00', color: '#ffb6c1' },
-    { id: 'c3', name: '體育 (網球) (上)', location: '', dayOfWeek: 1, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
-    { id: 'c4', name: '管理與企業倫理', location: 'IB-510-2', dayOfWeek: 2, startTime: '09:00', endTime: '12:00', color: '#56ccf2' },
-    { id: 'c5', name: '經濟學 (上)', location: 'IB-409-1', dayOfWeek: 2, startTime: '13:20', endTime: '16:20', color: '#56ccf2' },
-    { id: 'c6', name: '口語表達-D', location: 'T4-304', dayOfWeek: 2, startTime: '16:30', endTime: '18:30', color: '#ffb6c1' },
-    { id: 'c7', name: '英文小老師', location: '', dayOfWeek: 3, startTime: '10:00', endTime: '11:00', color: '#7bc676' },
-    { id: 'c8', name: '英語口語訓練 (上)', location: 'TR-611', dayOfWeek: 4, startTime: '08:00', endTime: '10:00', color: '#f2994a' },
-    { id: 'c9', name: '英文字彙與閱讀 (上)', location: 'TR-612', dayOfWeek: 4, startTime: '10:00', endTime: '12:00', color: '#f2994a' },
-    { id: 'c10', name: '數位商業與行銷', location: 'MA-206', dayOfWeek: 4, startTime: '15:30', endTime: '18:30', color: '#56ccf2' },
-    { id: 'c11', name: '商業品牌故事力：英語實務寫作', location: 'T4-302', dayOfWeek: 5, startTime: '08:00', endTime: '10:00', color: '#56ccf2' },
-    { id: 'c12', name: '新生中文說寫專題', location: 'TR-212', dayOfWeek: 5, startTime: '13:00', endTime: '16:00', color: '#ffb6c1' }
-  ];
-}
-
 // ------------------------------------------------------------------
-// Firebase 實時同步與資料遷移 (Migration) 核心邏輯
+// Firebase 數據同步邏輯 (已移除移轉舊資料程式碼)
 // ------------------------------------------------------------------
-
 function saveAllDataToFirebase() {
   const payload = {
     tasks: tasks,
@@ -147,50 +129,18 @@ function saveAllDataToFirebase() {
   });
 }
 
-// 自動遷移 LocalStorage 舊資料至 Firebase
-async function checkAndMigrateLocalStorage() {
-  const isMigrated = localStorage.getItem('firebase_migrated_v1');
-  if (isMigrated) return false;
-
-  const localTasks = localStorage.getItem('tasks');
-  const localSubtasks = localStorage.getItem('subtask_page_tasks');
-  const localCourses = localStorage.getItem('master_courses');
-  const localAtt = localStorage.getItem('course_attendance');
-
-  if (localTasks || localSubtasks || localCourses || localAtt) {
-    const migratedData = {
-      tasks: localTasks ? JSON.parse(localTasks) : [],
-      subtaskPageTasks: localSubtasks ? JSON.parse(localSubtasks) : [],
-      courses: localCourses ? JSON.parse(localCourses) : getDefaultCourses(),
-      courseAttendance: localAtt ? JSON.parse(localAtt) : {},
-      migratedAt: new Date().toISOString()
-    };
-
-    await setDoc(docRef, migratedData, { merge: true });
-    localStorage.setItem('firebase_migrated_v1', 'true');
-    console.log("舊資料成功轉移至 Firebase！");
-    return true;
-  }
-  return false;
-}
-
-// 開啟 Firebase 實時監聽 (Realtime Listener)
-onSnapshot(docRef, async (snapshot) => {
+// 監聽 Firebase 雲端資料變更
+onSnapshot(docRef, (snapshot) => {
   if (snapshot.exists()) {
-    const data = snapshot.data();
-    tasks = data.tasks || [];
-    subtaskPageTasks = data.subtaskPageTasks || [];
-    courses = data.courses || getDefaultCourses();
-    courseAttendance = data.courseAttendance || {};
-    renderView();
-  } else {
-    // 若雲端無資料，先檢查是否有 LocalStorage 舊資料需要轉移
-    const didMigrate = await checkAndMigrateLocalStorage();
-    if (!didMigrate) {
-      // 若無舊資料，初始同步預設資料
-      saveAllDataToFirebase();
-    }
+    const cloudData = snapshot.data();
+    tasks = cloudData.tasks || [];
+    subtaskPageTasks = cloudData.subtaskPageTasks || [];
+    courses = cloudData.courses || [];
+    courseAttendance = cloudData.courseAttendance || {};
   }
+  renderView();
+}, (error) => {
+  console.warn("Firebase 連線受限:", error);
 });
 
 // Helper Functions
@@ -213,36 +163,15 @@ function formatPaddedSlashDate(date) {
   return `${month}/${day}`;
 }
 
-function saveTasks() {
-  saveAllDataToFirebase();
-}
-
-function saveSubtaskPageTasks() {
-  saveAllDataToFirebase();
-}
-
-function saveCourses() {
-  saveAllDataToFirebase();
-}
-
-function saveCourseAttendance() {
-  saveAllDataToFirebase();
-}
-
-// 計算今天落於學期第幾週
 function calculateCurrentSemesterWeek() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const start = new Date(semesterStart);
   start.setHours(0, 0, 0, 0);
-
   if (today < start) return 0;
-
   const diffTime = today.getTime() - start.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   const weekIndex = Math.floor(diffDays / 7);
-
   return Math.min(Math.max(weekIndex, 0), 15);
 }
 
@@ -312,11 +241,9 @@ function renderView() {
   }
 }
 
-// 取得特定日期的課堂事件 (期中考/期末考無條件以紅色顯示)
 function getActiveCourseEventsForDate(dateStr) {
   const targetDate = new Date(dateStr);
   if (targetDate < semesterStart || targetDate > semesterEnd) return [];
-
   const dayOfWeek = targetDate.getDay();
   const matchedCourses = courses.filter((c) => Number(c.dayOfWeek) === dayOfWeek);
 
@@ -341,10 +268,8 @@ function getActiveCourseEventsForDate(dateStr) {
   return activeEvents;
 }
 
-// 渲染「115-1 課表」頁面
 function renderCourseView() {
   courseDaysGrid.innerHTML = '';
-
   const weekStart = new Date(semesterStart);
   weekStart.setDate(semesterStart.getDate() + currentWeekOffset * 7);
 
@@ -404,7 +329,6 @@ function renderCourseView() {
   }
 }
 
-// 開啟課程編輯與出缺勤 Modal
 function openCourseEditModal(course = null, dateStr = '') {
   editingCourseId = course ? course.id : null;
   selectedAttDateStr = dateStr;
@@ -425,7 +349,6 @@ function openCourseEditModal(course = null, dateStr = '') {
       const dateObj = new Date(dateStr);
       const currentAtt = courseAttendance[`${course.id}_${dateStr}`] || '出席';
       attSectionTitle.textContent = `日期 ${formatSlashDate(dateObj)} 出缺席與考試狀態 (目前：${currentAtt})`;
-
       updateModalButtonStates(currentAtt);
     } else {
       attendanceSection.style.display = 'none';
@@ -461,7 +384,6 @@ function updateModalButtonStates(currentStatus) {
   });
 }
 
-// 出缺席與考試按鈕監聽
 document.querySelectorAll('.att-status-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     if (!editingCourseId || !selectedAttDateStr) return;
@@ -507,13 +429,8 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
   });
 });
 
-openAddCourseBtn.addEventListener('click', () => {
-  openCourseEditModal(null, '');
-});
-
-closeCourseModalBtn.addEventListener('click', () => {
-  courseModal.style.display = 'none';
-});
+openAddCourseBtn.addEventListener('click', () => { openCourseEditModal(null, ''); });
+closeCourseModalBtn.addEventListener('click', () => { courseModal.style.display = 'none'; });
 
 saveCourseBtn.addEventListener('click', () => {
   const name = document.getElementById('c-name').value.trim();
@@ -551,7 +468,7 @@ saveCourseBtn.addEventListener('click', () => {
     courses.push(newCourse);
   }
 
-  saveCourses();
+  saveAllDataToFirebase();
   courseModal.style.display = 'none';
   renderCourseMasterList();
   renderCourseView();
@@ -561,7 +478,7 @@ deleteCourseBtn.addEventListener('click', () => {
   if (!editingCourseId) return;
   if (confirm('確定要刪除這門課程嗎？這將會同步從課表中完全移除。')) {
     courses = courses.filter((c) => c.id !== editingCourseId);
-    saveCourses();
+    saveAllDataToFirebase();
     courseModal.style.display = 'none';
     renderCourseView();
   }
@@ -572,7 +489,6 @@ function renderCourseMasterList() {
   courses.forEach((c) => {
     const li = document.createElement('li');
     li.className = 'modal-task-item';
-
     const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
     li.innerHTML = `
       <span class="task-color-dot" style="background-color: ${c.color}"></span>
@@ -583,15 +499,12 @@ function renderCourseMasterList() {
     li.querySelector('.delete-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       courses = courses.filter((item) => item.id !== c.id);
-      saveCourses();
+      saveAllDataToFirebase();
       renderCourseMasterList();
       renderCourseView();
     });
 
-    li.addEventListener('click', () => {
-      openCourseEditModal(c, '');
-    });
-
+    li.addEventListener('click', () => { openCourseEditModal(c, ''); });
     courseMasterList.appendChild(li);
   });
 }
@@ -617,7 +530,6 @@ viewCourseBtn.addEventListener('click', () => {
   renderView();
 });
 
-// 周檢視
 function renderWeekView() {
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
@@ -917,7 +829,7 @@ function renderSubtaskTimeline() {
         updateOrAddSubtaskPageOverride(task, { isDeletedInSubtaskView: true });
       } else {
         subtaskPageTasks = subtaskPageTasks.filter((t) => t.id !== task.id);
-        saveSubtaskPageTasks();
+        saveAllDataToFirebase();
       }
       renderSubtaskCalendar();
     });
@@ -948,7 +860,7 @@ function updateOrAddSubtaskPageOverride(task, changes) {
     };
     subtaskPageTasks.push(override);
   }
-  saveSubtaskPageTasks();
+  saveAllDataToFirebase();
 }
 
 subtaskAddBtn.addEventListener('click', () => {
@@ -976,7 +888,7 @@ subtaskAddBtn.addEventListener('click', () => {
   };
 
   subtaskPageTasks.push(newSubtask);
-  saveSubtaskPageTasks();
+  saveAllDataToFirebase();
   subtaskTaskInput.value = '';
   subtaskDescInput.value = '';
   renderSubtaskCalendar();
@@ -1120,7 +1032,7 @@ function renderOverdueView() {
     checkbox.className = 'overdue-checkbox';
     checkbox.addEventListener('change', () => {
       task.completed = checkbox.checked;
-      saveTasks();
+      saveAllDataToFirebase();
       renderOverdueView();
     });
 
@@ -1233,7 +1145,7 @@ function renderModalTasks() {
     checkbox.checked = task.completed;
     checkbox.addEventListener('change', () => {
       task.completed = checkbox.checked;
-      saveTasks();
+      saveAllDataToFirebase();
       renderModalTasks();
     });
 
@@ -1261,7 +1173,7 @@ function renderModalTasks() {
     deleteBtn.textContent = '刪除';
     deleteBtn.addEventListener('click', () => {
       tasks = tasks.filter((t) => t.id !== task.id);
-      saveTasks();
+      saveAllDataToFirebase();
       renderModalTasks();
     });
 
@@ -1322,7 +1234,7 @@ function saveOrAddTask() {
     tasks.push(newTask);
   }
 
-  saveTasks();
+  saveAllDataToFirebase();
   closeModal();
 }
 
@@ -1370,8 +1282,8 @@ function updateCurrentTimeLine() {
 
 // 事件綁定
 addBtn.addEventListener('click', saveOrAddTask);
-
 closeModalBtn.addEventListener('click', closeModal);
+
 window.addEventListener('click', (e) => {
   if (e.target === taskModal) closeModal();
   if (e.target === courseModal) courseModal.style.display = 'none';
@@ -1416,7 +1328,7 @@ function setActiveNavBtn(activeBtn) {
   }
 }
 
-// 行動版側邊欄抽屜 (Mobile Sidebar Drawer) 控制邏輯
+// 行動版側邊欄控制
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
 const sidebarBackdrop = document.getElementById('sidebar-backdrop');
@@ -1434,15 +1346,9 @@ function closeSidebar() {
   document.body.classList.remove('sidebar-open');
 }
 
-if (mobileMenuBtn) {
-  mobileMenuBtn.addEventListener('click', openSidebar);
-}
-if (sidebarCloseBtn) {
-  sidebarCloseBtn.addEventListener('click', closeSidebar);
-}
-if (sidebarBackdrop) {
-  sidebarBackdrop.addEventListener('click', closeSidebar);
-}
+if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openSidebar);
+if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
