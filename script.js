@@ -183,6 +183,7 @@ let currentWeekOffset = 0;
 let tasks = [];
 let subtaskPageTasks = [];
 let courseAttendance = {};
+let courseTimeOverrides = {}; // 儲存個別日期課程調整時間 { `${semesterId}_${courseId}_${dateStr}`: { startTime, endTime } }
 
 if (subtaskDateInput) subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
@@ -229,6 +230,7 @@ onAuthStateChanged(auth, (user) => {
         semesters = cloudData.semesters || semesters;
         selectedSemesterId = cloudData.selectedSemesterId || selectedSemesterId;
         courseAttendance = cloudData.courseAttendance || {};
+        courseTimeOverrides = cloudData.courseTimeOverrides || {};
         if (cloudData.colorLegends && Array.isArray(cloudData.colorLegends)) {
           colorLegends = cloudData.colorLegends;
           localStorage.setItem('calendar_color_legends', JSON.stringify(colorLegends));
@@ -254,6 +256,7 @@ onAuthStateChanged(auth, (user) => {
     tasks = [];
     subtaskPageTasks = [];
     courseAttendance = {};
+    courseTimeOverrides = {};
     renderView();
   }
 });
@@ -279,6 +282,7 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
     semesters: semesters,
     selectedSemesterId: selectedSemesterId,
     courseAttendance: courseAttendance,
+    courseTimeOverrides: courseTimeOverrides,
     colorLegends: colorLegends,
     isLegendHidden: isLegendHidden,
     updatedAt: new Date().toISOString()
@@ -638,11 +642,19 @@ function getActiveCourseEventsForDate(dateStr) {
 
     if (status !== '停課' && status !== '請假') {
       const isExam = status === '期中考' || status === '期末考';
+      // 檢查是否有當日個別調整的時間
+      const timeOverride = courseTimeOverrides[key];
+      const startTime = timeOverride ? timeOverride.startTime : c.startTime;
+      const endTime = timeOverride ? timeOverride.endTime : c.endTime;
+
       activeEvents.push({
         id: 'course_event_' + key,
+        courseId: c.id,
+        semesterId: linkedSem.id,
+        courseObj: c,
         text: isExam ? `📝 ${c.name} ${status}` : `📚 ${c.name} (${c.location || ''})`,
-        startTime: c.startTime,
-        endTime: c.endTime,
+        startTime: startTime,
+        endTime: endTime,
         color: isExam ? '#eb5757' : (c.color || '#ffb6c1'),
         date: dateStr,
         startDate: dateStr,
@@ -727,6 +739,9 @@ function renderCourseView() {
     dayCourses.forEach((c) => {
       const key = `${curSem.id}_${c.id}_${dayDateStr}`;
       const status = courseAttendance[key] || '出席';
+      const timeOverride = courseTimeOverrides[key];
+      const displayStart = timeOverride ? timeOverride.startTime : c.startTime;
+      const displayEnd = timeOverride ? timeOverride.endTime : c.endTime;
 
       const card = document.createElement('div');
       card.className = 'course-card';
@@ -748,7 +763,7 @@ function renderCourseView() {
 
       card.innerHTML = `
         <div class="course-name">${c.name}</div>
-        <div class="course-time">🕒 ${c.startTime} - ${c.endTime}</div>
+        <div class="course-time">🕒 ${displayStart} - ${displayEnd}${timeOverride ? ' (已調整)' : ''}</div>
         ${c.location ? `<div class="course-loc">📍 ${c.location}</div>` : ''}
         <div class="course-status-badge ${statusClass}">狀態: ${status}</div>
       `;
@@ -885,9 +900,62 @@ function openCourseEditModal(course = null, dateStr = '') {
     if (dateStr && curSem) {
       if (attendanceSection) attendanceSection.style.display = 'block';
       const dateObj = new Date(dateStr);
-      const currentAtt = courseAttendance[`${curSem.id}_${course.id}_${dateStr}`] || '出席';
+      const key = `${curSem.id}_${course.id}_${dateStr}`;
+      const currentAtt = courseAttendance[key] || '出席';
       if (attSectionTitle) attSectionTitle.textContent = `日期 ${formatSlashDate(dateObj)} 出缺席與考試狀態 (目前：${currentAtt})`;
       updateModalButtonStates(currentAtt);
+
+      // 動態更新/注入當日專屬時間調整 UI
+      let dayTimeContainer = document.getElementById('day-time-override-container');
+      if (!dayTimeContainer) {
+        dayTimeContainer = document.createElement('div');
+        dayTimeContainer.id = 'day-time-override-container';
+        dayTimeContainer.style.marginTop = '12px';
+        dayTimeContainer.style.paddingTop = '12px';
+        dayTimeContainer.style.borderTop = '1px dashed #dadce0';
+        attendanceSection.appendChild(dayTimeContainer);
+      }
+
+      const override = courseTimeOverrides[key];
+      const curStart = override ? override.startTime : course.startTime;
+      const curEnd = override ? override.endTime : course.endTime;
+
+      dayTimeContainer.innerHTML = `
+        <div class="status-sub-title">⏰ 當日專屬時間調整 (${formatSlashDate(dateObj)})</div>
+        <div class="form-row" style="margin-top: 6px;">
+          <input type="time" id="day-override-start" value="${curStart}">
+          <span>至</span>
+          <input type="time" id="day-override-end" value="${curEnd}">
+          <button type="button" id="btn-save-day-time" class="btn-secondary" style="background-color: #1a73e8; color: white; padding: 4px 10px; border: none; border-radius: 4px;">儲存當日時間</button>
+          ${override ? `<button type="button" id="btn-reset-day-time" class="btn-secondary" style="padding: 4px 8px;">重設預設</button>` : ''}
+        </div>
+      `;
+
+      const btnSaveDayTime = document.getElementById('btn-save-day-time');
+      if (btnSaveDayTime) {
+        btnSaveDayTime.onclick = () => {
+          const sTime = document.getElementById('day-override-start').value;
+          const eTime = document.getElementById('day-override-end').value;
+          if (sTime >= eTime) {
+            alert('結束時間必須晚於開始時間！');
+            return;
+          }
+          courseTimeOverrides[key] = { startTime: sTime, endTime: eTime };
+          saveAllDataToFirebase();
+          if (courseModal) courseModal.style.display = 'none';
+          renderView();
+        };
+      }
+
+      const btnResetDayTime = document.getElementById('btn-reset-day-time');
+      if (btnResetDayTime) {
+        btnResetDayTime.onclick = () => {
+          delete courseTimeOverrides[key];
+          saveAllDataToFirebase();
+          if (courseModal) courseModal.style.display = 'none';
+          renderView();
+        };
+      }
     } else {
       if (attendanceSection) attendanceSection.style.display = 'none';
     }
@@ -947,19 +1015,25 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
       );
 
       if (newStatus === '期中考' || newStatus === '期末考') {
+        const timeOverride = courseTimeOverrides[key];
+        const examStart = timeOverride ? timeOverride.startTime : course.startTime;
+        const examEnd = timeOverride ? timeOverride.endTime : course.endTime;
+
         tasks.push({
           id: 'exam_' + Date.now(),
           text: `${course.name} ${newStatus}`,
           description: `課堂 ${newStatus} (${course.location || ''})`,
-          startTime: course.startTime,
-          endTime: course.endTime,
+          startTime: examStart,
+          endTime: examEnd,
           color: '#eb5757',
           important: true,
           completed: false,
           date: selectedAttDateStr,
           startDate: selectedAttDateStr,
           endDate: selectedAttDateStr,
-          isCourseExam: true
+          isCourseExam: true,
+          courseId: course.id,
+          semesterId: curSem.id
         });
       }
     }
@@ -1217,11 +1291,20 @@ function renderWeekView() {
         <div class="card-time">${task.startTime || '09:00'} - ${task.endTime || '10:00'}</div>
       `;
 
+      // 周檢視點擊事件處置
       if (!task.isCourse) {
         card.addEventListener('click', (e) => {
           e.stopPropagation();
           selectedDateStr = task.startDate || task.date;
           openModalForEdit(task);
+        });
+      } else {
+        // 點擊課程卡片即可為該堂課個別調整當天時間
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (task.courseObj) {
+            openCourseEditModal(task.courseObj, dateStr);
+          }
         });
       }
 
@@ -1802,6 +1885,17 @@ function saveOrAddTask() {
       task.endTime = endVal;
       task.important = isImp;
       task.color = colorVal;
+
+      if (task.isCourseExam && task.courseId && task.semesterId) {
+        const targetSem = semesters.find((s) => s.id === task.semesterId);
+        if (targetSem && targetSem.courses) {
+          const targetCourse = targetSem.courses.find((c) => c.id === task.courseId);
+          if (targetCourse) {
+            targetCourse.startTime = startVal;
+            targetCourse.endTime = endVal;
+          }
+        }
+      }
     }
   } else {
     tasks.push({
