@@ -13,7 +13,14 @@
         <!-- 1. 左側 Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
+                <!-- 大螢幕專用的收納/展開按鈕 -->
+                <button id="sidebar-toggle-btn" class="mobile-menu-btn desktop-only-toggle" aria-label="切換選單收納">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
                 <div class="sidebar-brand">Calendar View</div>
+                <!-- 小螢幕展開側邊欄後顯示的關閉叉叉按鈕 -->
                 <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="關閉選單">&times;</button>
             </div>
             <button id="view-month-btn" class="nav-btn active">
@@ -42,6 +49,19 @@
                 <span class="icon">⚠️</span>
                 <span>逾期事項</span>
             </button>
+
+            <!-- 行動端 (RWD) 登入與用戶資訊底部控制區 -->
+            <div class="sidebar-user-auth" id="sidebar-user-auth">
+                <div id="sidebar-user-info" style="display: none; align-items: center; gap: 8px; width: 100%;">
+                    <img id="sidebar-user-photo" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%;">
+                    <span id="sidebar-user-name" style="font-size: 0.88rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <button id="sidebar-logout-btn" class="btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;">登出</button>
+                </div>
+                <button id="sidebar-login-btn" class="btn-secondary"
+                    style="width: 100%; background-color: #4285f4; color: white; border: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                    🔑 Google 帳號登入
+                </button>
+            </div>
         </aside>
         <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
@@ -50,7 +70,8 @@
             <!-- 2. 頂部控制列 -->
             <header class="calendar-controls">
                 <div class="left-controls">
-                    <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="打開導覽選單">
+                    <!-- 小螢幕放在收納欄外面的選單按鈕 -->
+                    <button id="mobile-open-btn" class="mobile-menu-btn mobile-only-open" aria-label="開啟選單">
                         <span class="hamburger-bar"></span>
                         <span class="hamburger-bar"></span>
                         <span class="hamburger-bar"></span>
@@ -66,8 +87,8 @@
                     </div>
                 </div>
 
-                <!-- 右側 Google 登入 / 用戶控制區 -->
-                <div class="user-auth-section"
+                <!-- 右側 Google 登入 / 用戶控制區 (桌面端) -->
+                <div class="user-auth-section" id="desktop-user-auth"
                     style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                     <div id="user-info" style="display: none; align-items: center; gap: 8px;">
                         <img id="user-photo" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%;">
@@ -255,6 +276,22 @@
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- 行動端初次訪問頁面說明引導 Modal -->
+    <div id="guide-modal" class="modal">
+        <div class="modal-content" style="text-align: center; max-width: 380px;">
+            <div class="modal-header" style="justify-content: center; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                <h3 id="guide-modal-title" style="font-size: 1.1rem; color: #1a73e8;">💡 頁面功能指南</h3>
+            </div>
+            <div class="modal-body" style="padding: 16px 8px;">
+                <div id="guide-modal-icon" style="font-size: 2.8rem; margin-bottom: 12px;">📅</div>
+                <p id="guide-modal-desc" style="font-size: 0.92rem; color: #3c4043; line-height: 1.5;"></p>
+            </div>
+            <div style="margin-top: 12px;">
+                <button id="close-guide-modal-btn" class="btn-secondary" style="background-color: #1a73e8; color: white; border: none; width: 100%; padding: 10px; font-weight: bold;">我知道了</button>
+            </div>
         </div>
     </div>
 

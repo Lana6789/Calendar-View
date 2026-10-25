@@ -19,7 +19,7 @@ body {
   width: 100vw;
 }
 
-/* 2. Sidebar Navigation */
+/* 2. Sidebar Navigation (大螢幕樣式) */
 .sidebar {
   width: 200px;
   background-color: #ffffff;
@@ -29,21 +29,43 @@ body {
   padding: 16px 8px;
   gap: 8px;
   overflow-y: auto;
+  transition: width 0.25s ease, transform 0.28s ease;
+  position: relative;
+}
+
+/* 電腦端收納選單態 */
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .sidebar-brand,
+.sidebar.collapsed .nav-btn span:last-child,
+.sidebar.collapsed .sidebar-divider,
+.sidebar.collapsed .sidebar-close-btn {
+  display: none;
+}
+
+.sidebar.collapsed .nav-btn {
+  justify-content: center;
+  padding: 10px 0;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
 }
 
 .sidebar-brand {
   font-size: 1.1rem;
   font-weight: bold;
   color: #1a73e8;
-  padding: 8px;
+  white-space: nowrap;
+  flex: 1;
 }
 
+/* 大螢幕不顯示關閉叉叉 */
 .sidebar-close-btn {
   display: none;
   background: none;
@@ -54,6 +76,8 @@ body {
   padding: 4px 8px;
   line-height: 1;
   border-radius: 4px;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-close-btn:hover {
@@ -64,14 +88,15 @@ body {
   display: none;
 }
 
+/* 3. 收納按鈕控制 */
 .mobile-menu-btn {
-  display: none;
+  display: inline-flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 4px;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 6px;
   border: 1px solid #dadce0;
   background: #ffffff;
@@ -88,11 +113,19 @@ body {
 
 .mobile-menu-btn .hamburger-bar {
   display: block;
-  width: 18px;
+  width: 16px;
   height: 2px;
   background-color: #3c4043;
   border-radius: 2px;
-  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* 控制大螢幕與小螢幕切換鈕的顯示狀態 */
+.desktop-only-toggle {
+  display: inline-flex;
+}
+
+.mobile-only-open {
+  display: none;
 }
 
 .sidebar-divider {
@@ -114,6 +147,7 @@ body {
   color: #3c4043;
   transition: background-color 0.2s;
   text-align: left;
+  white-space: nowrap;
 }
 
 .nav-btn:hover {
@@ -126,7 +160,15 @@ body {
   font-weight: bold;
 }
 
-/* 3. Main Area */
+/* Sidebar 底部 User Auth 區塊 */
+.sidebar-user-auth {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #dadce0;
+  display: none; /* 預設桌面隱藏，手機版開啟 */
+}
+
+/* Main Area */
 .main-content {
   flex: 1;
   display: flex;
@@ -205,7 +247,7 @@ body {
   display: none !important;
 }
 
-/* 4. Month View & Task Badges */
+/* Month View & Task Badges */
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -453,7 +495,7 @@ body {
   text-decoration: line-through;
 }
 
-/* 5. Week View */
+/* Week View */
 #week-view {
   display: flex;
   flex-direction: column;
@@ -462,27 +504,28 @@ body {
 }
 
 .week-scroll-wrapper {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
   width: 100%;
 }
 
-/* 5. Week View 修改 */
+.week-body-scroll {
+  display: flex;
+  flex-direction: column;
+  min-width: 700px;
+}
+
 .week-header-row {
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
   border-bottom: 1px solid #dadce0;
-  background: #ffffff;
-  box-sizing: border-box;
-
-  /* 新增：Sticky 定位，讓滑動時標頭保持固定且連在一起 */
+  background-color: #ffffff;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .time-corner {
@@ -492,6 +535,7 @@ body {
   font-size: 0.75rem;
   color: #70757a;
   border-right: 1px solid #dadce0;
+  background-color: #ffffff;
 }
 
 .week-header-cell {
@@ -502,6 +546,7 @@ body {
   border-right: 1px solid #dadce0;
   font-size: 0.85rem;
   color: #70757a;
+  background-color: #ffffff;
 }
 
 .week-day-num {
@@ -515,11 +560,6 @@ body {
   border-radius: 50%;
 }
 
-.week-body-scroll {
-  flex: 1;
-  overflow-y: scroll;
-}
-
 .week-grid {
   display: flex;
   position: relative;
@@ -531,6 +571,7 @@ body {
   border-right: 1px solid #dadce0;
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
 }
 
 .time-label {
@@ -601,7 +642,7 @@ body {
   box-shadow: none;
 }
 
-/* 6. Eisenhower Matrix View */
+/* Eisenhower Matrix View */
 #matrix-view {
   padding: 16px;
   height: 100%;
@@ -613,14 +654,11 @@ body {
   grid-template-rows: 1fr 1fr;
   gap: 16px;
   height: 100%;
-
-  /* 新增：定義桌面端的象限分佈 */
   grid-template-areas: 
     "q2 q1"
     "q3 q4";
 }
 
-/* 新增：將各象限綁定至對應的 Area */
 .matrix-box.q1 { grid-area: q1; }
 .matrix-box.q2 { grid-area: q2; }
 .matrix-box.q3 { grid-area: q3; }
@@ -686,7 +724,7 @@ body {
   white-space: pre-wrap;
 }
 
-/* 7. Overdue View */
+/* Overdue View */
 .overdue-container {
   padding: 24px;
   max-width: 900px;
@@ -773,7 +811,7 @@ body {
   background-color: #1e8449 !important;
 }
 
-/* 8. Subtask Section */
+/* Subtask Section */
 .project-details-section {
   padding: 16px;
   background-color: #f8f9fa;
@@ -828,7 +866,7 @@ body {
   background-color: #1e8449;
 }
 
-/* 9. Course View */
+/* Course View */
 .course-page-container {
   padding: 20px;
   max-width: 95%;
@@ -906,7 +944,7 @@ body {
 .course-card.cancelled {
   background-color: #f1f3f4 !important;
   border-left-color: #70757a !important;
-  opacity: 0.6;
+  opacity: 0.65;
 }
 
 .course-name {
@@ -926,6 +964,11 @@ body {
   font-weight: bold;
   color: #1e8449;
   margin-top: 2px;
+}
+
+.status-warning {
+  color: #d93025 !important;
+  font-weight: bold;
 }
 
 .status-cancelled {
@@ -993,7 +1036,7 @@ body {
   color: #d93025;
 }
 
-/* 10. Timeline Base & Modal */
+/* Timeline Base & Modal */
 .timeline-list {
   display: flex;
   flex-direction: column;
@@ -1229,7 +1272,7 @@ body {
   padding: 16px 0;
 }
 
-/* 11. 響應式網頁設計 */
+/* 響應式網頁設計 (RWD 調整) */
 html,
 body {
   -webkit-font-smoothing: antialiased;
@@ -1250,6 +1293,26 @@ body {
 }
 
 @media (max-width: 768px) {
+  .desktop-only-toggle {
+    display: none !important;
+  }
+
+  .mobile-only-open {
+    display: inline-flex !important;
+  }
+
+  .view-guide-text {
+    display: none !important;
+  }
+
+  #desktop-user-auth {
+    display: none !important;
+  }
+
+  .sidebar-user-auth {
+    display: flex;
+  }
+
   #matrix-view {
     padding: 10px;
     height: 100%;
@@ -1261,8 +1324,6 @@ body {
     grid-template-rows: auto;
     gap: 12px;
     height: auto;
-
-    /* 手機直式由上至下排列：第一象限(Q1) -> 第四象限(Q4) -> 第二象限(Q2) -> 第三象限(Q3) */
     grid-template-areas: 
       "q1"
       "q4"
@@ -1324,8 +1385,9 @@ body {
     font-size: 1.15rem;
   }
 
+  /* 小螢幕顯示關閉叉叉 */
   .sidebar-close-btn {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     width: 34px;
@@ -1358,10 +1420,6 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-  }
-
-  .mobile-menu-btn {
-    display: inline-flex;
   }
 
   .calendar-controls {
@@ -1448,13 +1506,7 @@ body {
     height: 10px;
   }
 
-  .week-scroll-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .week-header-row,
-  .week-grid {
+  .week-body-scroll {
     min-width: 620px;
   }
 
@@ -1717,7 +1769,6 @@ body {
   }
 }
 
-/* 12. 學期方案與多課程頁面補充樣式 */
 .semester-tabs-bar::-webkit-scrollbar {
   height: 4px;
 }

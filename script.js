@@ -30,9 +30,14 @@ const userInfoSection = document.getElementById('user-info');
 const userPhoto = document.getElementById('user-photo');
 const userName = document.getElementById('user-name');
 
+const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn');
+const sidebarUserInfo = document.getElementById('sidebar-user-info');
+const sidebarUserPhoto = document.getElementById('sidebar-user-photo');
+const sidebarUserName = document.getElementById('sidebar-user-name');
+
 const viewTitle = document.getElementById('view-title');
 const viewGuideText = document.getElementById('view-guide-text');
-const topAddSemesterBtn = document.getElementById('top-add-semester-btn');
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 const todayBtn = document.getElementById('today-btn');
@@ -106,6 +111,12 @@ const semesterModalTitle = document.getElementById('semester-modal-title');
 const closeSemesterModalBtn = document.getElementById('close-semester-modal-btn');
 const saveSemesterBtn = document.getElementById('save-semester-btn');
 const deleteSemesterBtn = document.getElementById('delete-semester-btn');
+
+const guideModal = document.getElementById('guide-modal');
+const guideModalTitle = document.getElementById('guide-modal-title');
+const guideModalIcon = document.getElementById('guide-modal-icon');
+const guideModalDesc = document.getElementById('guide-modal-desc');
+const closeGuideModalBtn = document.getElementById('close-guide-modal-btn');
 
 const calendarDays = document.getElementById('calendar-days');
 const weekHeaderRow = document.getElementById('week-header-row');
@@ -182,20 +193,21 @@ initTimeLabels();
 renderView();
 
 // Firebase Auth
-if (loginBtn) {
-  loginBtn.addEventListener('click', () => {
-    signInWithPopup(auth, googleProvider).catch((err) => {
-      console.error("登入失敗:", err);
-      alert("Google 登入失敗！");
-    });
+const handleSignIn = () => {
+  signInWithPopup(auth, googleProvider).catch((err) => {
+    console.error("登入失敗:", err);
+    alert("Google 登入失敗！");
   });
-}
+};
 
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    signOut(auth).then(() => alert("已成功登出！"));
-  });
-}
+const handleSignOut = () => {
+  signOut(auth).then(() => alert("已成功登出！"));
+};
+
+if (loginBtn) loginBtn.addEventListener('click', handleSignIn);
+if (sidebarLoginBtn) sidebarLoginBtn.addEventListener('click', handleSignIn);
+if (logoutBtn) logoutBtn.addEventListener('click', handleSignOut);
+if (sidebarLogoutBtn) sidebarLogoutBtn.addEventListener('click', handleSignOut);
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -204,6 +216,11 @@ onAuthStateChanged(auth, (user) => {
     if (userName) userName.textContent = user.displayName || '使用者';
     if (userInfoSection) userInfoSection.style.display = 'flex';
     if (loginBtn) loginBtn.style.display = 'none';
+
+    if (sidebarUserPhoto) sidebarUserPhoto.src = user.photoURL || '';
+    if (sidebarUserName) sidebarUserName.textContent = user.displayName || '使用者';
+    if (sidebarUserInfo) sidebarUserInfo.style.display = 'flex';
+    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
 
     docRef = doc(db, "users", currentUser.uid, "data", "miniTaskManagerData");
 
@@ -232,6 +249,10 @@ onAuthStateChanged(auth, (user) => {
     currentUser = null;
     if (userInfoSection) userInfoSection.style.display = 'none';
     if (loginBtn) loginBtn.style.display = 'flex';
+
+    if (sidebarUserInfo) sidebarUserInfo.style.display = 'none';
+    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'block';
+
     if (unsubscribeFirestore) unsubscribeFirestore();
     docRef = null;
     tasks = [];
@@ -318,7 +339,6 @@ function calculateCurrentSemesterWeek(sem) {
   return Math.min(Math.max(Math.floor(diffDays / 7), 0), maxWeeks - 1);
 }
 
-// 核心排序：先依日期排序，若日期相同則精準依時間（08:00 比 15:00 早）進行由早至晚排序
 function sortTasksByChronologicalOrder(taskList) {
   return taskList.sort((a, b) => {
     const dateA = a.startDate || a.date || '';
@@ -358,6 +378,38 @@ function initTimeLabels() {
   }
 }
 
+// 行動端頁面首次點擊的引導彈窗說明
+function checkAndShowMobileGuide(mode) {
+  if (window.innerWidth > 768) return;
+
+  const key = `mobile_guide_shown_${mode}`;
+  if (localStorage.getItem(key)) return;
+
+  const guideInfos = {
+    month: { title: '📅 主月檢視指南', icon: '📅', desc: '此頁面用於規劃與管理主要任務與長期行程，點擊任意日期即可開始新增或修改行程。' },
+    week: { title: '📊 周檢視指南', icon: '📊', desc: '此頁面自動整合主要任務與學期課表，提供週次時間軸檢視，掌握一週精確時間安排。' },
+    matrix: { title: '📌 艾森豪象限表指南', icon: '📌', desc: '依緊急性與重要性自動分類任務優先順序，讓您優先處理重要且緊急的事項。' },
+    course: { title: '🎓 課程頁面指南', icon: '🎓', desc: '可新增學期方案與每週課程，記錄每日出缺席與考試狀態，並可啟用連結至周檢視。' },
+    subtask: { title: '📝 任務細項安排指南', icon: '📝', desc: '單向修改或新增僅屬於本頁面的細項劃分，不影響主月檢視的大任務架構。' },
+    overdue: { title: '⚠️ 逾期事項指南', icon: '⚠️', desc: '彙整所有已過期且未完成的事項，可在此快捷改期或打勾標示完成。' }
+  };
+
+  const info = guideInfos[mode];
+  if (info) {
+    guideModalTitle.textContent = info.title;
+    guideModalIcon.textContent = info.icon;
+    guideModalDesc.textContent = info.desc;
+    guideModal.style.display = 'flex';
+    localStorage.setItem(key, 'true');
+  }
+}
+
+if (closeGuideModalBtn) {
+  closeGuideModalBtn.addEventListener('click', () => {
+    guideModal.style.display = 'none';
+  });
+}
+
 function renderView() {
   if (monthView) monthView.classList.add('hidden');
   if (weekView) weekView.classList.add('hidden');
@@ -368,6 +420,8 @@ function renderView() {
 
   if (navBtnsGroup) navBtnsGroup.style.display = 'flex';
   if (todayBtn) todayBtn.style.display = 'inline-block';
+
+  checkAndShowMobileGuide(currentMode);
 
   if (currentMode === 'month' && monthView) {
     monthView.classList.remove('hidden');
@@ -398,8 +452,11 @@ function renderView() {
     renderSubtaskCalendar();
   } else if (currentMode === 'course' && courseView) {
     courseView.classList.remove('hidden');
+    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+    if (todayBtn) todayBtn.style.display = 'none';
+    const curSem = getCurrentSemester();
+    if (viewTitle) viewTitle.textContent = `🎓 課程管理頁面 (${curSem ? curSem.name : ''})`;
     if (viewGuideText) viewGuideText.textContent = '新增不同學年的課程，並切換啟用哪一個學期連結至周檢視。';
-    if (topAddSemesterBtn) topAddSemesterBtn.style.display = 'inline-flex';
     renderCourseView();
   }
 }
@@ -495,13 +552,6 @@ function renderModalColorPicker(activeColor = '#1a73e8') {
   });
 }
 
-function syncWeekHeaderAlignment() {
-  const weekHeaderRow = document.getElementById('week-header-row');
-  if (weekHeaderRow) {
-    weekHeaderRow.style.paddingRight = '0px';
-  }
-}
-
 function renderCalendar() {
   if (!calendarDays) return;
   calendarDays.innerHTML = '';
@@ -589,7 +639,8 @@ function getActiveCourseEventsForDate(dateStr) {
   matchedCourses.forEach((c) => {
     const key = `${linkedSem.id}_${c.id}_${dateStr}`;
     const status = courseAttendance[key] || '出席';
-    if (status !== '停課') {
+
+    if (status !== '停課' && status !== '請假') {
       const isExam = status === '期中考' || status === '期末考';
       activeEvents.push({
         id: 'course_event_' + key,
@@ -613,6 +664,8 @@ function renderCourseView() {
 
   const curSem = getCurrentSemester();
   if (!curSem) return;
+
+  if (viewTitle) viewTitle.textContent = `🎓 課程管理頁面 (${curSem.name})`;
 
   semesterTabsBar.innerHTML = '';
   semesters.forEach((sem) => {
@@ -672,7 +725,6 @@ function renderCourseView() {
     header.textContent = formatPaddedSlashDate(dayDate);
     col.appendChild(header);
 
-    // 依據時間先後順序自動排序當天課程
     let dayCourses = (curSem.courses || []).filter((c) => Number(c.dayOfWeek) === dayOfWeek);
     dayCourses.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
@@ -682,21 +734,27 @@ function renderCourseView() {
 
       const card = document.createElement('div');
       card.className = 'course-card';
-      if (status === '停課') card.classList.add('cancelled');
+      
+      if (status === '停課' || status === '請假') {
+        card.classList.add('cancelled');
+      }
 
       if (status === '期中考' || status === '期末考') {
         card.style.backgroundColor = '#fce8e6';
         card.style.borderLeft = '5px solid #eb5757';
-      } else {
+      } else if (status !== '停課' && status !== '請假') {
         card.style.backgroundColor = '#f1f3f4';
         card.style.borderLeft = `4px solid ${c.color || '#ffb6c1'}`;
       }
+
+      const isWarning = status === '遲到' || status === '曠課';
+      const statusClass = status === '期中考' || status === '期末考' ? 'status-exam' : ((status === '停課' || status === '請假') ? 'status-cancelled' : (isWarning ? 'status-warning' : ''));
 
       card.innerHTML = `
         <div class="course-name">${c.name}</div>
         <div class="course-time">🕒 ${c.startTime} - ${c.endTime}</div>
         ${c.location ? `<div class="course-loc">📍 ${c.location}</div>` : ''}
-        <div class="course-status-badge ${status === '期中考' || status === '期末考' ? 'status-exam' : (status === '停課' ? 'status-cancelled' : '')}">狀態: ${status}</div>
+        <div class="course-status-badge ${statusClass}">狀態: ${status}</div>
       `;
 
       card.addEventListener('click', () => {
@@ -710,7 +768,6 @@ function renderCourseView() {
   }
 }
 
-// 連結至周檢視切換控制
 if (toggleLinkWeekBtn) {
   toggleLinkWeekBtn.addEventListener('click', () => {
     const curSem = getCurrentSemester();
@@ -738,7 +795,6 @@ function openNewSemesterModal() {
 }
 
 if (openAddSemesterBtn) openAddSemesterBtn.addEventListener('click', openNewSemesterModal);
-if (topAddSemesterBtn) topAddSemesterBtn.addEventListener('click', openNewSemesterModal);
 
 if (editSemesterInfoBtn) {
   editSemesterInfoBtn.addEventListener('click', () => {
@@ -906,7 +962,8 @@ document.querySelectorAll('.att-status-btn').forEach((btn) => {
           completed: false,
           date: selectedAttDateStr,
           startDate: selectedAttDateStr,
-          endDate: selectedAttDateStr
+          endDate: selectedAttDateStr,
+          isCourseExam: true
         });
       }
     }
@@ -961,7 +1018,6 @@ if (saveCourseBtn) {
       });
     }
 
-    // 儲存後自動按時間序排列所有課程
     curSem.courses.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
     saveAllDataToFirebase();
@@ -1102,7 +1158,7 @@ function renderWeekView() {
       col.appendChild(hourGrid);
     }
 
-    const dayTasks = tasks.filter((t) => isTaskInDate(t, dateStr));
+    const dayTasks = tasks.filter((t) => isTaskInDate(t, dateStr) && !t.isCourseExam);
     const dayCourseEvents = getActiveCourseEventsForDate(dateStr);
     const combinedWeekEvents = [...dayTasks, ...dayCourseEvents];
 
@@ -1185,7 +1241,6 @@ function renderWeekView() {
 
     weekColumns.appendChild(col);
   });
-  requestAnimationFrame(syncWeekHeaderAlignment);
 }
 
 function getCombinedSubtaskTasks() {
@@ -1502,7 +1557,7 @@ function renderMatrixView() {
   q3List.innerHTML = '';
   q4List.innerHTML = '';
 
-  let activeTasks = tasks.filter((t) => !t.completed);
+  let activeTasks = tasks.filter((t) => !t.completed && !t.isCourseExam);
   activeTasks = sortTasksByChronologicalOrder(activeTasks);
 
   activeTasks.forEach((task) => {
@@ -1772,11 +1827,9 @@ function saveOrAddTask() {
   closeModal();
 }
 
-// 事件綁定
 if (addBtn) addBtn.addEventListener('click', saveOrAddTask);
 if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 
-// 自訂顏色新增邏輯
 if (btnAddModalColor && modalCustomColorInput) {
   btnAddModalColor.addEventListener('click', () => {
     modalCustomColorInput.click();
@@ -1799,7 +1852,6 @@ if (btnAddModalColor && modalCustomColorInput) {
   });
 }
 
-// Task Color Legend 說明列按鈕事件
 if (btnLegendAddColor && modalCustomColorInput) {
   btnLegendAddColor.addEventListener('click', () => {
     modalCustomColorInput.click();
@@ -1822,7 +1874,6 @@ if (btnShowLegend) {
   });
 }
 
-// 細項任務編輯 Modal 事件
 if (subtaskEditSaveBtn) subtaskEditSaveBtn.addEventListener('click', saveSubtaskEdit);
 if (subtaskEditCancelBtn) subtaskEditCancelBtn.addEventListener('click', closeSubtaskEditModal);
 if (closeSubtaskEditModalBtn) closeSubtaskEditModalBtn.addEventListener('click', closeSubtaskEditModal);
@@ -1832,6 +1883,7 @@ window.addEventListener('click', (e) => {
   if (e.target === courseModal && courseModal) courseModal.style.display = 'none';
   if (e.target === semesterModal && semesterModal) semesterModal.style.display = 'none';
   if (e.target === subtaskEditModal && subtaskEditModal) closeSubtaskEditModal();
+  if (e.target === guideModal && guideModal) guideModal.style.display = 'none';
 });
 
 if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => { currentMode = 'month'; setActiveNavBtn(viewMonthBtn); renderView(); });
@@ -1847,11 +1899,21 @@ function setActiveNavBtn(activeBtn) {
   if (window.innerWidth <= 768) closeSidebar();
 }
 
-// 側邊欄控制
-const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+// 側邊欄收納按鈕與切換邏輯
+const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+const mobileOpenBtn = document.getElementById('mobile-open-btn');
 const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
 const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const sidebar = document.getElementById('sidebar');
+
+function toggleSidebar() {
+  if (window.innerWidth <= 768) {
+    if (sidebar.classList.contains('open')) closeSidebar();
+    else openSidebar();
+  } else {
+    sidebar.classList.toggle('collapsed');
+  }
+}
 
 function openSidebar() {
   if (sidebar) sidebar.classList.add('open');
@@ -1865,7 +1927,8 @@ function closeSidebar() {
   document.body.classList.remove('sidebar-open');
 }
 
-if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openSidebar);
+if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+if (mobileOpenBtn) mobileOpenBtn.addEventListener('click', openSidebar);
 if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
 if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
 
@@ -1876,6 +1939,7 @@ document.addEventListener('keydown', (e) => {
     if (courseModal) courseModal.style.display = 'none';
     if (semesterModal) semesterModal.style.display = 'none';
     if (subtaskEditModal) closeSubtaskEditModal();
+    if (guideModal) guideModal.style.display = 'none';
   }
 });
 
@@ -1883,9 +1947,6 @@ if (prevBtn) {
   prevBtn.addEventListener('click', () => {
     if (currentMode === 'month' || currentMode === 'subtask') currentDate.setMonth(currentDate.getMonth() - 1);
     else if (currentMode === 'week') currentDate.setDate(currentDate.getDate() - 7);
-    else if (currentMode === 'course') {
-      if (currentWeekOffset > 0) currentWeekOffset--;
-    }
     renderView();
   });
 }
@@ -1894,16 +1955,10 @@ if (nextBtn) {
   nextBtn.addEventListener('click', () => {
     if (currentMode === 'month' || currentMode === 'subtask') currentDate.setMonth(currentDate.getMonth() + 1);
     else if (currentMode === 'week') currentDate.setDate(currentDate.getDate() + 7);
-    else if (currentMode === 'course') {
-      const curSem = getCurrentSemester();
-      const maxWeeks = calculateMaxWeeks(curSem);
-      if (currentWeekOffset < maxWeeks - 1) currentWeekOffset++;
-    }
     renderView();
   });
 }
 
-// 點擊頂部「今日」按鈕時的切換邏輯
 if (todayBtn) {
   todayBtn.addEventListener('click', () => {
     currentDate = new Date();
