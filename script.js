@@ -165,7 +165,16 @@ let colorLegends = JSON.parse(localStorage.getItem('calendar_color_legends') || 
 let isLegendHidden = JSON.parse(localStorage.getItem('calendar_is_legend_hidden') || 'false');
 
 // 多學期結構
-let semesters = [];
+let semesters = [
+  {
+    id: 'sem_115_1',
+    name: '115-1',
+    startDate: '2026-09-07',
+    endDate: '2026-12-25',
+    isLinkedToWeek: true,
+    courses: []
+  }
+];
 
 let selectedSemesterId = 'sem_115_1';
 let editingSemesterId = null;
