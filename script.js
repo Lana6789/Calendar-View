@@ -165,20 +165,7 @@ let colorLegends = JSON.parse(localStorage.getItem('calendar_color_legends') || 
 let isLegendHidden = JSON.parse(localStorage.getItem('calendar_is_legend_hidden') || 'false');
 
 // 多學期結構
-let semesters = [
-  {
-    id: 'sem_115_1',
-    name: '115-1',
-    startDate: '2026-09-07',
-    endDate: '2026-12-25',
-    isLinkedToWeek: true,
-    courses: [
-      { id: 'c1', name: '組織行為-E', location: 'E1-306', dayOfWeek: 1, startTime: '08:00', endTime: '10:00', color: '#ffb6c1' },
-      { id: 'c2', name: '邏輯思考概論-A', location: 'TR-412-1', dayOfWeek: 1, startTime: '13:00', endTime: '15:00', color: '#f28b82' },
-      { id: 'c5', name: '經濟學 (上)', location: 'IB-409-1', dayOfWeek: 2, startTime: '13:20', endTime: '16:20', color: '#ffb6c1' }
-    ]
-  }
-];
+let semesters = [];
 
 let selectedSemesterId = 'sem_115_1';
 let editingSemesterId = null;
