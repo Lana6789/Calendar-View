@@ -1778,6 +1778,7 @@ body {
   border-radius: 4px;
 }
 
+
 #active-semester-panel {
   animation: fadeIn 0.2s ease-in-out;
 }
@@ -1793,3 +1794,390 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ======================================================
+   REPEAT / RECURRENCE FEATURE STYLES
+   ====================================================== */
+
+/* --- 重複摘要列 (in task modal) --- */
+.repeat-form-row {
+  align-items: center;
+}
+
+.repeat-summary-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.repeat-summary-box #repeat-summary-text {
+  font-size: 0.88rem;
+  color: #5f6368;
+  font-style: italic;
+  flex: 1;
+  min-width: 80px;
+}
+
+.btn-repeat-edit {
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
+  color: #1a73e8;
+  border: 1.5px solid #a8c7fa;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-repeat-edit:hover {
+  background: linear-gradient(135deg, #1a73e8 0%, #1558b0 100%);
+  color: #fff;
+  border-color: #1a73e8;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(26, 115, 232, 0.25);
+}
+
+.btn-repeat-clear {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  background: none;
+  border: 1.5px solid #d93025;
+  color: #d93025;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-repeat-clear:hover {
+  background: #d93025;
+  color: #fff;
+}
+
+/* --- 修改範圍選項列 --- */
+.repeat-edit-scope-row {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+  border: 1.5px solid #f9ab00;
+  border-radius: 10px;
+  padding: 10px 14px !important;
+  margin-top: 4px;
+  animation: fadeIn 0.2s ease;
+}
+
+.repeat-edit-scope-row label {
+  font-size: 0.88rem;
+  color: #8a6200;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.repeat-scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.scope-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #3c4043;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.scope-radio-label:hover {
+  background: rgba(249, 171, 0, 0.1);
+}
+
+.scope-radio-label input[type="radio"] {
+  accent-color: #f9ab00;
+  width: 16px;
+  height: 16px;
+}
+
+/* --- 重複設定 Modal 本體 --- */
+.repeat-config-modal {
+  z-index: 1100; /* 在 task-modal (z:1000) 之上 */
+}
+
+.repeat-config-content {
+  max-width: 420px;
+  width: 95%;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.22), 0 4px 20px rgba(26,115,232,0.1);
+  animation: rcSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rcSlideIn {
+  from { opacity: 0; transform: scale(0.85) translateY(30px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);     }
+}
+
+.repeat-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.rc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rc-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* 頻率列 */
+.rc-freq-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rc-select {
+  padding: 8px 12px;
+  border: 1.5px solid #dadce0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #202124;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  flex: 1;
+  min-width: 100px;
+}
+
+.rc-select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  background: #fff;
+}
+
+.rc-interval-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8f9fa;
+  border: 1.5px solid #dadce0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.88rem;
+  color: #3c4043;
+  white-space: nowrap;
+}
+
+.rc-number-input {
+  width: 52px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a73e8;
+  -moz-appearance: textfield;
+}
+
+.rc-number-input::-webkit-inner-spin-button,
+.rc-number-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* 星期幾選擇器 */
+.rc-weekday-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rc-day-btn {
+  position: relative;
+  cursor: pointer;
+}
+
+.rc-day-btn input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.rc-day-btn span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #dadce0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #5f6368;
+  background: #f8f9fa;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.rc-day-btn input[type="checkbox"]:checked + span {
+  background: linear-gradient(135deg, #1a73e8 0%, #0d5bbc 100%);
+  border-color: #1a73e8;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(26, 115, 232, 0.35);
+  transform: scale(1.08);
+}
+
+.rc-day-btn span:hover {
+  border-color: #1a73e8;
+  color: #1a73e8;
+}
+
+/* 結束條件 */
+.rc-end-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rc-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  background: #f8f9fa;
+  transition: all 0.15s;
+  font-size: 0.9rem;
+  color: #3c4043;
+  flex-wrap: wrap;
+}
+
+.rc-radio-label:hover {
+  background: #e8f0fe;
+  border-color: #a8c7fa;
+}
+
+.rc-radio-label input[type="radio"] {
+  accent-color: #1a73e8;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.rc-radio-label:has(input[type="radio"]:checked) {
+  background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
+  border-color: #1a73e8;
+}
+
+.rc-date-input {
+  border: 1.5px solid #dadce0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.88rem;
+  color: #202124;
+  background: #fff;
+  cursor: pointer;
+}
+
+.rc-date-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+}
+
+/* 底部按鈕列 */
+.rc-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f3f4;
+}
+
+.btn-primary-rc {
+  padding: 9px 24px;
+  background: linear-gradient(135deg, #1a73e8 0%, #0d5bbc 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 3px 10px rgba(26,115,232,0.3);
+}
+
+.btn-primary-rc:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(26,115,232,0.4);
+}
+
+/* 重複活動 badge 標示 */
+.task-badge.is-recurring::after,
+.task-badge.is-recurring-instance::after {
+  content: "🔁";
+  font-size: 0.7em;
+  margin-left: 3px;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+/* RWD: 小螢幕調整 */
+@media (max-width: 480px) {
+  .repeat-config-content {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    margin-top: auto;
+  }
+
+  .repeat-config-modal .modal-content {
+    align-self: flex-end;
+  }
+
+  .rc-day-btn span {
+    width: 36px;
+    height: 36px;
+    font-size: 0.82rem;
+  }
+
+  .rc-freq-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rc-interval-box {
+    justify-content: center;
+  }
+
+  .repeat-summary-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .repeat-scope-options {
+    gap: 4px;
+  }
+}

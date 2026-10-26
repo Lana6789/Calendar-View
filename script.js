@@ -154,6 +154,10 @@ let editingCourseId = null;
 let selectedAttDateStr = '';
 let editingSubtaskTarget = null;
 
+// 重複設定暫存 (在 modal 中進行中的設定)
+let pendingRepeatConfig = null; // null = 不重複
+// 格式: { freq:'daily'|'weekly'|'monthly'|'yearly', interval:1, weekdays:[0,1,...], endType:'never'|'on_date'|'after_count', endDate:'YYYY-MM-DD', endCount:10 }
+
 const DEFAULT_COLOR_LEGENDS = [
   { id: 'c-blue', color: '#1a73e8', label: '自己的行程' },
   { id: 'c-yellow', color: '#f2994a', label: '報告' },
@@ -597,6 +601,9 @@ function renderCalendar() {
       const taskBadge = document.createElement('div');
       taskBadge.className = 'task-badge';
       if (task.completed) taskBadge.classList.add('completed');
+
+      const isRecurringTask = !!(task.seriesId || task.repeatConfig);
+      if (isRecurringTask) taskBadge.classList.add('is-recurring');
 
       if (!task.completed && task.color) {
         taskBadge.style.backgroundColor = task.color + '22';
@@ -1743,6 +1750,7 @@ function renderOverdueView() {
 
 function openModal() {
   editingTaskId = null;
+  pendingRepeatConfig = null;
   const dateObj = new Date(selectedDateStr);
   if (modalDateTitle) modalDateTitle.textContent = `${formatSlashDate(dateObj)} 行程管理`;
   if (modalTaskStartDate) modalTaskStartDate.value = selectedDateStr;
@@ -1753,6 +1761,9 @@ function openModal() {
   if (taskDescInput) taskDescInput.value = '';
   if (importantCheckbox) importantCheckbox.checked = false;
   if (addBtn) addBtn.textContent = '新增行程';
+  updateRepeatSummaryUI();
+  const scopeRow = document.getElementById('repeat-edit-scope-row');
+  if (scopeRow) scopeRow.style.display = 'none';
   renderModalColorPicker('#1a73e8');
   renderModalTasks();
   if (taskModal) taskModal.style.display = 'flex';
@@ -1771,7 +1782,29 @@ function openModalForEdit(task) {
   if (importantCheckbox) importantCheckbox.checked = !!task.important;
   renderModalColorPicker(task.color || '#1a73e8');
 
+  // 重複設定：帶入現有 repeatConfig（主任務或 instance 都要帶 seriesId 所對應的 repeatConfig）
   if (addBtn) addBtn.textContent = '儲存修改';
+
+  // 如果是 instance（屬於某 series），載入 repeatConfig
+  const isRecurring = !!(task.seriesId || task.repeatConfig);
+  if (isRecurring) {
+    // 找 series 母任務
+    const parentTask = tasks.find(t => t.id === (task.seriesId || task.id) && t.repeatConfig);
+    pendingRepeatConfig = parentTask ? { ...parentTask.repeatConfig } : (task.repeatConfig ? { ...task.repeatConfig } : null);
+  } else {
+    pendingRepeatConfig = task.repeatConfig ? { ...task.repeatConfig } : null;
+  }
+  updateRepeatSummaryUI();
+
+  // 顯示修改範圍選項（當此任務屬於重複系列）
+  const scopeRow = document.getElementById('repeat-edit-scope-row');
+  if (scopeRow) {
+    scopeRow.style.display = isRecurring ? 'flex' : 'none';
+    // 預設選 "this"
+    const thisRadio = scopeRow.querySelector('input[value="this"]');
+    if (thisRadio) thisRadio.checked = true;
+  }
+
   renderModalTasks();
   if (taskModal) taskModal.style.display = 'flex';
 }
@@ -1813,10 +1846,11 @@ function renderModalTasks() {
     colorDot.className = 'task-color-dot';
     colorDot.style.backgroundColor = task.color || '#1a73e8';
 
+    const isRecurring = !!(task.seriesId || task.repeatConfig);
     const span = document.createElement('span');
     span.className = 'task-text';
     if (task.completed) span.classList.add('completed');
-    span.textContent = `${task.startTime ? `[${task.startTime}-${task.endTime}] ` : ''}${task.text}${task.important ? ' [重要]' : ''}`;
+    span.textContent = `${task.startTime ? `[${task.startTime}-${task.endTime}] ` : ''}${task.text}${task.important ? ' [重要]' : ''}${isRecurring ? ' 🔁' : ''}`;
 
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-reschedule';
@@ -1828,7 +1862,16 @@ function renderModalTasks() {
     deleteBtn.className = 'delete-btn';
     deleteBtn.textContent = '刪除';
     deleteBtn.addEventListener('click', () => {
-      tasks = tasks.filter((t) => t.id !== task.id);
+      if (isRecurring) {
+        const choice = confirm(
+          `「${task.text}」是重複活動。\n\n確定要刪除此系列的哪些活動？\n\n[確定] = 僅刪除此活動\n[取消] = 取消操作`
+        );
+        if (!choice) return;
+        // 僅刪除此 instance
+        tasks = tasks.filter((t) => t.id !== task.id);
+      } else {
+        tasks = tasks.filter((t) => t.id !== task.id);
+      }
       saveAllDataToFirebase();
       renderModalTasks();
     });
@@ -1876,15 +1919,70 @@ function saveOrAddTask() {
   if (editingTaskId) {
     const task = tasks.find((t) => t.id === editingTaskId);
     if (task) {
-      task.text = text;
-      task.description = desc;
-      task.date = startDateVal;
-      task.startDate = startDateVal;
-      task.endDate = endDateVal;
-      task.startTime = startVal;
-      task.endTime = endVal;
-      task.important = isImp;
-      task.color = colorVal;
+      // 判斷修改範圍
+      const scopeRow = document.getElementById('repeat-edit-scope-row');
+      const isSeriesTask = !!(task.seriesId || task.repeatConfig);
+      const scopeVal = scopeRow && scopeRow.style.display !== 'none'
+        ? (document.querySelector('input[name="repeat-edit-scope"]:checked')?.value || 'this')
+        : 'this';
+
+      const baseChanges = {
+        text, description: desc,
+        startTime: startVal, endTime: endVal,
+        important: isImp, color: colorVal,
+        date: startDateVal, startDate: startDateVal, endDate: endDateVal
+      };
+
+      if (isSeriesTask && scopeVal !== 'this') {
+        const seriesId = task.seriesId || task.id;
+        const seriesTasks = tasks.filter(t => t.seriesId === seriesId || t.id === seriesId);
+        seriesTasks.sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+
+        if (scopeVal === 'all') {
+          // 更新所有屬於此系列的 instance（保留每個的日期）
+          seriesTasks.forEach(t => {
+            const dayOffset = dateDiffDays(t.startDate, task.startDate);
+            Object.assign(t, {
+              text, description: desc,
+              startTime: startVal, endTime: endVal,
+              important: isImp, color: colorVal
+            });
+            // 更新母任務 repeatConfig
+            if (t.repeatConfig && pendingRepeatConfig) t.repeatConfig = { ...pendingRepeatConfig };
+          });
+        } else if (scopeVal === 'this_and_after') {
+          // 刪除此 instance 之後的所有 instances，重新從此日期依 repeatConfig 生成
+          const thisDate = task.startDate;
+          tasks = tasks.filter(t => !(((t.seriesId === seriesId) || t.id === seriesId) && t.startDate >= thisDate && t.id !== task.id));
+          // 先更新此 task
+          Object.assign(task, baseChanges);
+          // 重新從此 task 之後生成新序列
+          const parentConfig = pendingRepeatConfig || (tasks.find(t => t.id === seriesId) || {}).repeatConfig;
+          if (parentConfig) {
+            const newInstances = generateRecurringInstances(
+              { ...baseChanges, id: seriesId, seriesId, repeatConfig: parentConfig },
+              parentConfig,
+              task.startDate
+            ).slice(1); // 跳過第一個（已是 task 本身）
+            tasks.push(...newInstances);
+          }
+        }
+      } else {
+        // 僅修改此 instance
+        Object.assign(task, baseChanges);
+        // 如果更新了 repeatConfig（新增重複或修改週期），且是孤立任務
+        if (!task.seriesId && pendingRepeatConfig) {
+          // 轉成 series：為此任務生成未來 instances
+          task.repeatConfig = { ...pendingRepeatConfig };
+          task.seriesId = task.id; // 自身是 series 的 root
+          const newInstances = generateRecurringInstances(task, pendingRepeatConfig, startDateVal).slice(1);
+          tasks.push(...newInstances);
+        } else if (!task.seriesId && !pendingRepeatConfig && task.repeatConfig) {
+          // 清除重複
+          delete task.repeatConfig;
+          delete task.seriesId;
+        }
+      }
 
       if (task.isCourseExam && task.courseId && task.semesterId) {
         const targetSem = semesters.find((s) => s.id === task.semesterId);
@@ -1898,24 +1996,274 @@ function saveOrAddTask() {
       }
     }
   } else {
-    tasks.push({
-      id: Date.now(),
-      text: text,
-      description: desc,
-      startTime: startVal,
-      endTime: endVal,
-      color: colorVal,
-      important: isImp,
+    const newId = Date.now();
+    const baseTask = {
+      id: newId,
+      text, description: desc,
+      startTime: startVal, endTime: endVal,
+      color: colorVal, important: isImp,
       completed: false,
-      date: startDateVal,
-      startDate: startDateVal,
-      endDate: endDateVal
-    });
+      date: startDateVal, startDate: startDateVal, endDate: endDateVal
+    };
+
+    if (pendingRepeatConfig) {
+      baseTask.repeatConfig = { ...pendingRepeatConfig };
+      baseTask.seriesId = newId;
+      const instances = generateRecurringInstances(baseTask, pendingRepeatConfig, startDateVal);
+      tasks.push(...instances);
+    } else {
+      tasks.push(baseTask);
+    }
   }
 
   saveAllDataToFirebase();
   closeModal();
 }
+
+// ── 重複功能 helper ────────────────────────────────────────────
+
+/** 計算兩個 YYYY-MM-DD 字串相差的天數 */
+function dateDiffDays(dateA, dateB) {
+  return Math.round((new Date(dateA) - new Date(dateB)) / 86400000);
+}
+
+/**
+ * 根據 repeatConfig 從 fromDateStr 開始，生成所有 instance（含第一個 = 原任務日期）
+ * 返回 task 物件陣列
+ */
+function generateRecurringInstances(baseTask, cfg, fromDateStr) {
+  const instances = [];
+  const maxInstances = 500; // 安全上限
+  const { freq, interval = 1, weekdays = [], endType, endDate, endCount } = cfg;
+
+  const endDateObj = endDate ? new Date(endDate) : null;
+  // 計算事件持續天數（跨日任務）
+  const baseStart = new Date(baseTask.startDate);
+  const baseEnd = new Date(baseTask.endDate || baseTask.startDate);
+  const durationDays = Math.round((baseEnd - baseStart) / 86400000);
+
+  function pushInstance(dateObj, idx) {
+    if (endType === 'on_date' && endDateObj && dateObj > endDateObj) return false;
+    if (endType === 'after_count' && instances.length >= endCount) return false;
+    const instanceDateStr = formatDate(dateObj);
+    const instanceEndDate = new Date(dateObj);
+    instanceEndDate.setDate(instanceEndDate.getDate() + durationDays);
+    const isFirst = instances.length === 0;
+    instances.push({
+      ...baseTask,
+      id: isFirst ? baseTask.id : (String(baseTask.id) + '_r' + instances.length),
+      seriesId: baseTask.id,
+      date: instanceDateStr,
+      startDate: instanceDateStr,
+      endDate: formatDate(instanceEndDate),
+      repeatConfig: isFirst ? cfg : undefined,
+      completed: false
+    });
+    return true;
+  }
+
+  // 防止無限迴圈的截止日
+  const hardStop = new Date(fromDateStr);
+  hardStop.setFullYear(hardStop.getFullYear() + 2);
+
+  if (freq === 'weekly' && weekdays.length > 0) {
+    // 找到 fromDate 所在週的週日（週起始）
+    const from = new Date(fromDateStr);
+    const weekStart = new Date(from);
+    weekStart.setDate(from.getDate() - from.getDay()); // 移到週日
+
+    let weekCursor = new Date(weekStart);
+    let safety = 0;
+    while (instances.length < maxInstances && safety++ < 2000) {
+      // 在此週中掃描 weekdays
+      const sortedDays = [...weekdays].sort((a, b) => a - b);
+      for (const dow of sortedDays) {
+        const d = new Date(weekCursor);
+        d.setDate(weekCursor.getDate() + dow);
+        if (d >= from && d <= hardStop) {
+          if (!pushInstance(d, instances.length)) break;
+        }
+      }
+      if (instances.length >= maxInstances) break;
+      // 前進 interval 週
+      weekCursor.setDate(weekCursor.getDate() + 7 * interval);
+      if (weekCursor > hardStop) break;
+    }
+  } else {
+    // daily / monthly / yearly
+    let current = new Date(fromDateStr);
+    let safety = 0;
+    while (instances.length < maxInstances && safety++ < 2000) {
+      if (current > hardStop) break;
+      if (!pushInstance(current, instances.length)) break;
+      // 推進
+      const next = new Date(current);
+      if (freq === 'daily') next.setDate(next.getDate() + interval);
+      else if (freq === 'monthly') next.setMonth(next.getMonth() + interval);
+      else if (freq === 'yearly') next.setFullYear(next.getFullYear() + interval);
+      current = next;
+    }
+  }
+
+  return instances;
+}
+
+
+/**
+ * 計算下一個重複日期
+ */
+function computeNextDate(date, freq, interval, weekdays) {
+  const d = new Date(date);
+  if (freq === 'daily') {
+    d.setDate(d.getDate() + interval);
+  } else if (freq === 'weekly') {
+    d.setDate(d.getDate() + 1); // 每週模式：逐日前進，由 weekdays 過濾
+  } else if (freq === 'monthly') {
+    d.setMonth(d.getMonth() + interval);
+  } else if (freq === 'yearly') {
+    d.setFullYear(d.getFullYear() + interval);
+  }
+  return d;
+}
+
+/**
+ * 將 repeatConfig 轉成可讀摘要字串
+ */
+function buildRepeatSummaryText(cfg) {
+  if (!cfg) return '不重複';
+  const freqMap = { daily: '日', weekly: '週', monthly: '月', yearly: '年' };
+  const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+  let s = `每 ${cfg.interval > 1 ? cfg.interval + ' ' : ''}${freqMap[cfg.freq]}`;
+
+  if (cfg.freq === 'weekly' && cfg.weekdays && cfg.weekdays.length > 0) {
+    s += `（週${cfg.weekdays.map(d => dayNames[d]).join('、')}）`;
+  }
+
+  if (cfg.endType === 'on_date' && cfg.endDate) {
+    s += `，至 ${cfg.endDate}`;
+  } else if (cfg.endType === 'after_count') {
+    s += `，共 ${cfg.endCount} 次`;
+  } else {
+    s += '，持續';
+  }
+  return s;
+}
+
+/** 更新 modal 中重複設定的摘要 UI */
+function updateRepeatSummaryUI() {
+  const summaryText = document.getElementById('repeat-summary-text');
+  const clearBtn = document.getElementById('btn-clear-repeat');
+  if (summaryText) summaryText.textContent = buildRepeatSummaryText(pendingRepeatConfig);
+  if (clearBtn) clearBtn.style.display = pendingRepeatConfig ? 'flex' : 'none';
+}
+
+// ── 重複設定 Modal 控制 ────────────────────────────────────────
+
+const repeatConfigModal = document.getElementById('repeat-config-modal');
+const closeRepeatConfigBtn = document.getElementById('close-repeat-config-btn');
+const rcCancelBtn = document.getElementById('rc-cancel-btn');
+const rcConfirmBtn = document.getElementById('rc-confirm-btn');
+const rcFreqSelect = document.getElementById('rc-freq');
+const rcIntervalInput = document.getElementById('rc-interval');
+const rcIntervalUnit = document.getElementById('rc-interval-unit');
+const rcWeekdaysSection = document.getElementById('rc-weekdays-section');
+const rcEndDateInput = document.getElementById('rc-end-date');
+const rcEndCountInput = document.getElementById('rc-end-count');
+const btnOpenRepeat = document.getElementById('btn-open-repeat');
+const btnClearRepeat = document.getElementById('btn-clear-repeat');
+
+const FREQ_UNIT_MAP = { daily: '天', weekly: '週', monthly: '月', yearly: '年' };
+
+function openRepeatConfigModal() {
+  // 初始化 UI
+  const cfg = pendingRepeatConfig || { freq: 'weekly', interval: 1, weekdays: [], endType: 'never', endDate: '', endCount: 10 };
+
+  if (rcFreqSelect) rcFreqSelect.value = cfg.freq;
+  if (rcIntervalInput) rcIntervalInput.value = cfg.interval || 1;
+  if (rcIntervalUnit) rcIntervalUnit.textContent = FREQ_UNIT_MAP[cfg.freq] || '週';
+  if (rcWeekdaysSection) rcWeekdaysSection.style.display = cfg.freq === 'weekly' ? 'flex' : 'none';
+
+  // 星期幾 checkboxes
+  document.querySelectorAll('input[name="rc-weekday"]').forEach(cb => {
+    cb.checked = (cfg.weekdays || []).includes(Number(cb.value));
+  });
+
+  // 如果 weekly 且 weekdays 空，預設選目前選擇的日期的星期
+  if (cfg.freq === 'weekly' && (!cfg.weekdays || cfg.weekdays.length === 0)) {
+    const startDate = document.getElementById('modal-task-start-date')?.value || selectedDateStr;
+    const d = new Date(startDate);
+    const dow = d.getDay();
+    const cb = document.querySelector(`input[name="rc-weekday"][value="${dow}"]`);
+    if (cb) cb.checked = true;
+  }
+
+  // 結束條件
+  const endRadio = document.querySelector(`input[name="rc-end"][value="${cfg.endType || 'never'}"]`);
+  if (endRadio) endRadio.checked = true;
+
+  if (rcEndDateInput) {
+    const defaultEnd = new Date();
+    defaultEnd.setFullYear(defaultEnd.getFullYear() + 1);
+    rcEndDateInput.value = cfg.endDate || formatDate(defaultEnd);
+  }
+  if (rcEndCountInput) rcEndCountInput.value = cfg.endCount || 10;
+
+  if (repeatConfigModal) repeatConfigModal.style.display = 'flex';
+}
+
+function closeRepeatConfigModal() {
+  if (repeatConfigModal) repeatConfigModal.style.display = 'none';
+}
+
+function confirmRepeatConfig() {
+  const freq = rcFreqSelect ? rcFreqSelect.value : 'weekly';
+  const interval = parseInt(rcIntervalInput?.value || 1);
+  const weekdays = [...document.querySelectorAll('input[name="rc-weekday"]:checked')].map(cb => Number(cb.value));
+  const endType = document.querySelector('input[name="rc-end"]:checked')?.value || 'never';
+  const endDate = rcEndDateInput?.value || '';
+  const endCount = parseInt(rcEndCountInput?.value || 10);
+
+  if (freq === 'weekly' && weekdays.length === 0) {
+    alert('每週重複：請至少選擇一個星期幾！');
+    return;
+  }
+
+  pendingRepeatConfig = { freq, interval, weekdays, endType, endDate, endCount };
+  closeRepeatConfigModal();
+  updateRepeatSummaryUI();
+}
+
+if (btnOpenRepeat) btnOpenRepeat.addEventListener('click', openRepeatConfigModal);
+if (btnClearRepeat) btnClearRepeat.addEventListener('click', () => {
+  pendingRepeatConfig = null;
+  updateRepeatSummaryUI();
+});
+if (closeRepeatConfigBtn) closeRepeatConfigBtn.addEventListener('click', closeRepeatConfigModal);
+if (rcCancelBtn) rcCancelBtn.addEventListener('click', closeRepeatConfigModal);
+if (rcConfirmBtn) rcConfirmBtn.addEventListener('click', confirmRepeatConfig);
+
+if (rcFreqSelect) {
+  rcFreqSelect.addEventListener('change', () => {
+    const freq = rcFreqSelect.value;
+    if (rcIntervalUnit) rcIntervalUnit.textContent = FREQ_UNIT_MAP[freq] || '週';
+    if (rcWeekdaysSection) rcWeekdaysSection.style.display = freq === 'weekly' ? 'flex' : 'none';
+  });
+}
+
+// 點擊日期/次數欄位時自動選取對應 radio
+if (rcEndDateInput) rcEndDateInput.addEventListener('focus', () => {
+  const r = document.querySelector('input[name="rc-end"][value="on_date"]');
+  if (r) r.checked = true;
+});
+if (rcEndCountInput) rcEndCountInput.addEventListener('focus', () => {
+  const r = document.querySelector('input[name="rc-end"][value="after_count"]');
+  if (r) r.checked = true;
+});
+
+// 點擊 repeatConfigModal 背景關閉
+window.addEventListener('click', (e) => {
+  if (e.target === repeatConfigModal) closeRepeatConfigModal();
+});
 
 if (addBtn) addBtn.addEventListener('click', saveOrAddTask);
 if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
@@ -2025,13 +2373,18 @@ if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeSidebar();
-    closeModal();
-    if (courseModal) courseModal.style.display = 'none';
-    if (semesterModal) semesterModal.style.display = 'none';
-    if (subtaskEditModal) closeSubtaskEditModal();
-    if (guideModal) guideModal.style.display = 'none';
+    if (repeatConfigModal && repeatConfigModal.style.display !== 'none') {
+      closeRepeatConfigModal();
+    } else {
+      closeModal();
+      if (courseModal) courseModal.style.display = 'none';
+      if (semesterModal) semesterModal.style.display = 'none';
+      if (subtaskEditModal) closeSubtaskEditModal();
+      if (guideModal) guideModal.style.display = 'none';
+    }
   }
 });
+
 
 if (prevBtn) {
   prevBtn.addEventListener('click', () => {

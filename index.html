@@ -342,6 +342,30 @@
                     <div class="form-row">
                         <textarea id="task-desc-input" placeholder="輸入 Description (說明與備註)..." rows="2"></textarea>
                     </div>
+                    <!-- 重複設定列 -->
+                    <div class="form-row repeat-form-row" id="repeat-form-row">
+                        <label>重複設定：</label>
+                        <div class="repeat-summary-box" id="repeat-summary-box">
+                            <span id="repeat-summary-text">不重複</span>
+                            <button type="button" id="btn-open-repeat" class="btn-repeat-edit">設定重複</button>
+                            <button type="button" id="btn-clear-repeat" class="btn-repeat-clear" style="display:none" title="清除重複設定">✕</button>
+                        </div>
+                    </div>
+                    <!-- 編輯重複活動時的範圍選項 -->
+                    <div id="repeat-edit-scope-row" class="form-row repeat-edit-scope-row" style="display:none">
+                        <label>修改範圍：</label>
+                        <div class="repeat-scope-options">
+                            <label class="scope-radio-label">
+                                <input type="radio" name="repeat-edit-scope" value="this" checked> 僅此活動
+                            </label>
+                            <label class="scope-radio-label">
+                                <input type="radio" name="repeat-edit-scope" value="this_and_after"> 此活動及之後
+                            </label>
+                            <label class="scope-radio-label">
+                                <input type="radio" name="repeat-edit-scope" value="all"> 所有重複活動
+                            </label>
+                        </div>
+                    </div>
                     <button id="add-btn">儲存 / 新增</button>
                 </div>
                 <ul id="modal-task-list" class="task-list"></ul>
@@ -488,6 +512,78 @@
                         <button id="subtask-edit-cancel-btn" class="btn-secondary"
                             style="padding: 10px 16px;">取消</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重複週期設定 Modal (自訂週期) -->
+    <div id="repeat-config-modal" class="modal repeat-config-modal">
+        <div class="modal-content repeat-config-content">
+            <div class="modal-header">
+                <h3>🔁 設定重複週期</h3>
+                <span id="close-repeat-config-btn" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body repeat-config-body">
+
+                <!-- 重複頻率 -->
+                <div class="rc-section">
+                    <label class="rc-label">重複頻率</label>
+                    <div class="rc-freq-row">
+                        <select id="rc-freq" class="rc-select">
+                            <option value="daily">每日</option>
+                            <option value="weekly" selected>每週</option>
+                            <option value="monthly">每月</option>
+                            <option value="yearly">每年</option>
+                        </select>
+                        <div class="rc-interval-box">
+                            <span>每隔</span>
+                            <input type="number" id="rc-interval" class="rc-number-input" value="1" min="1" max="99">
+                            <span id="rc-interval-unit">週</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 每週重複日期 (僅 weekly 顯示) -->
+                <div class="rc-section" id="rc-weekdays-section">
+                    <label class="rc-label">重複日期</label>
+                    <div class="rc-weekday-picker">
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="0"><span>日</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="1"><span>一</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="2"><span>二</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="3"><span>三</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="4"><span>四</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="5"><span>五</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="6"><span>六</span></label>
+                    </div>
+                </div>
+
+                <!-- 結束條件 -->
+                <div class="rc-section">
+                    <label class="rc-label">結束時間</label>
+                    <div class="rc-end-options">
+                        <label class="rc-radio-label">
+                            <input type="radio" name="rc-end" value="never" checked>
+                            <span>持續不停</span>
+                        </label>
+                        <label class="rc-radio-label">
+                            <input type="radio" name="rc-end" value="on_date">
+                            <span>於</span>
+                            <input type="date" id="rc-end-date" class="rc-date-input">
+                        </label>
+                        <label class="rc-radio-label">
+                            <input type="radio" name="rc-end" value="after_count">
+                            <span>重複</span>
+                            <input type="number" id="rc-end-count" class="rc-number-input" value="10" min="1" max="365">
+                            <span>次</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 按鈕列 -->
+                <div class="rc-footer">
+                    <button type="button" id="rc-cancel-btn" class="btn-secondary">取消</button>
+                    <button type="button" id="rc-confirm-btn" class="btn-primary-rc">完成</button>
                 </div>
             </div>
         </div>
