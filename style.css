@@ -19,7 +19,7 @@ body {
   width: 100vw;
 }
 
-/* 2. Sidebar Navigation (大螢幕樣式) */
+/* 2. Sidebar Navigation */
 .sidebar {
   width: 200px;
   background-color: #ffffff;
@@ -33,7 +33,6 @@ body {
   position: relative;
 }
 
-/* 電腦端收納選單態 */
 .sidebar.collapsed {
   width: 60px;
 }
@@ -65,7 +64,6 @@ body {
   flex: 1;
 }
 
-/* 大螢幕不顯示關閉叉叉 */
 .sidebar-close-btn {
   display: none;
   background: none;
@@ -88,7 +86,6 @@ body {
   display: none;
 }
 
-/* 3. 收納按鈕控制 */
 .mobile-menu-btn {
   display: inline-flex;
   flex-direction: column;
@@ -119,7 +116,6 @@ body {
   border-radius: 2px;
 }
 
-/* 控制大螢幕與小螢幕切換鈕的顯示狀態 */
 .desktop-only-toggle {
   display: inline-flex;
 }
@@ -160,12 +156,11 @@ body {
   font-weight: bold;
 }
 
-/* Sidebar 底部 User Auth 區塊 */
 .sidebar-user-auth {
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid #dadce0;
-  display: none; /* 預設桌面隱藏，手機版開啟 */
+  display: none;
 }
 
 /* Main Area */
@@ -380,14 +375,6 @@ body {
   border-radius: 14px;
   border: 1px solid #dadce0;
   font-size: 0.82rem;
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
-}
-
-.legend-item:hover {
-  border-color: #1a73e8;
-  background-color: #f8fafd;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .legend-dot {
@@ -403,30 +390,22 @@ body {
   color: #3c4043;
 }
 
-.legend-edit-icon {
-  font-size: 0.75rem;
-  opacity: 0.5;
-  transition: opacity 0.15s;
-}
-
-.legend-item:hover .legend-edit-icon {
-  opacity: 1;
-}
-
 .legend-del-btn {
   background: none;
   border: none;
-  color: #d93025;
-  font-size: 0.85rem;
+  color: #70757a;
+  font-size: 0.95rem;
   cursor: pointer;
   padding: 0 2px;
   line-height: 1;
-  opacity: 0.6;
-  transition: opacity 0.15s;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .legend-del-btn:hover {
-  opacity: 1;
+  color: #d93025;
 }
 
 .show-legend-container {
@@ -434,27 +413,39 @@ body {
   padding: 4px 8px;
 }
 
-.btn-add-color {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px dashed #70757a;
-  background-color: #ffffff;
-  color: #5f6368;
-  font-size: 1.1rem;
-  font-weight: bold;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s;
+/* 基礎調色盤樣式 */
+.preset-color-palette {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
 }
 
-.btn-add-color:hover {
-  border-color: #1a73e8;
-  color: #1a73e8;
-  background-color: #e8f0fe;
+.preset-color-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.preset-color-btn.selected {
+  border-color: #202124;
+  transform: scale(1.15);
+}
+
+.btn-shade {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  border: 1px solid #dadce0;
+  background-color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-shade:hover {
+  background-color: #f1f3f4;
 }
 
 .task-badge {
@@ -1203,30 +1194,6 @@ body {
   cursor: pointer;
 }
 
-.color-picker-group {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.color-picker-group input[type="radio"] {
-  display: none;
-}
-
-.color-circle {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.15s, border-color 0.15s;
-}
-
-.color-picker-group input[type="radio"]:checked+.color-circle {
-  border-color: #202124;
-  transform: scale(1.15);
-}
-
 .task-color-dot {
   width: 10px;
   height: 10px;
@@ -1272,7 +1239,7 @@ body {
   padding: 16px 0;
 }
 
-/* 響應式網頁設計 (RWD 調整) */
+/* 響應式網頁設計 */
 html,
 body {
   -webkit-font-smoothing: antialiased;
@@ -1385,7 +1352,6 @@ body {
     font-size: 1.15rem;
   }
 
-  /* 小螢幕顯示關閉叉叉 */
   .sidebar-close-btn {
     display: flex !important;
     align-items: center;
@@ -1762,11 +1728,6 @@ body {
     font-size: 0.6rem;
     padding: 1px 2px;
   }
-
-  .color-circle {
-    width: 20px;
-    height: 20px;
-  }
 }
 
 .semester-tabs-bar::-webkit-scrollbar {
@@ -1777,7 +1738,6 @@ body {
   background: #dadce0;
   border-radius: 4px;
 }
-
 
 #active-semester-panel {
   animation: fadeIn 0.2s ease-in-out;
@@ -1795,11 +1755,7 @@ body {
   }
 }
 
-/* ======================================================
-   REPEAT / RECURRENCE FEATURE STYLES
-   ====================================================== */
-
-/* --- 重複摘要列 (in task modal) --- */
+/* REPEAT STYLES */
 .repeat-form-row {
   align-items: center;
 }
@@ -1863,7 +1819,6 @@ body {
   color: #fff;
 }
 
-/* --- 修改範圍選項列 --- */
 .repeat-edit-scope-row {
   background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
   border: 1.5px solid #f9ab00;
@@ -1909,9 +1864,8 @@ body {
   height: 16px;
 }
 
-/* --- 重複設定 Modal 本體 --- */
 .repeat-config-modal {
-  z-index: 1100; /* 在 task-modal (z:1000) 之上 */
+  z-index: 1100;
 }
 
 .repeat-config-content {
@@ -1949,7 +1903,6 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* 頻率列 */
 .rc-freq-row {
   display: flex;
   align-items: center;
@@ -2000,12 +1953,6 @@ body {
   -moz-appearance: textfield;
 }
 
-.rc-number-input::-webkit-inner-spin-button,
-.rc-number-input::-webkit-outer-spin-button {
-  opacity: 1;
-}
-
-/* 星期幾選擇器 */
 .rc-weekday-picker {
   display: flex;
   gap: 6px;
@@ -2053,7 +2000,6 @@ body {
   color: #1a73e8;
 }
 
-/* 結束條件 */
 .rc-end-options {
   display: flex;
   flex-direction: column;
@@ -2107,7 +2053,6 @@ body {
   border-color: #1a73e8;
 }
 
-/* 底部按鈕列 */
 .rc-footer {
   display: flex;
   justify-content: flex-end;
@@ -2134,9 +2079,7 @@ body {
   box-shadow: 0 6px 18px rgba(26,115,232,0.4);
 }
 
-/* 重複活動 badge 標示 */
-.task-badge.is-recurring::after,
-.task-badge.is-recurring-instance::after {
+.task-badge.is-recurring::after {
   content: "🔁";
   font-size: 0.7em;
   margin-left: 3px;
@@ -2144,7 +2087,6 @@ body {
   opacity: 0.7;
 }
 
-/* RWD: 小螢幕調整 */
 @media (max-width: 480px) {
   .repeat-config-content {
     max-width: 100%;
@@ -2180,4 +2122,4 @@ body {
   .repeat-scope-options {
     gap: 4px;
   }
-}
+}
