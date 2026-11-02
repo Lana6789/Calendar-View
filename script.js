@@ -358,7 +358,7 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
     return;
   }
 
-  const payload = {
+  const rawPayload = {
     tasks: tasks,
     personalTasks: personalTasks,
     subtaskPageTasks: subtaskPageTasks,
@@ -373,7 +373,10 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
     updatedAt: new Date().toISOString()
   };
 
-  setDoc(docRef, payload, { merge: true }).catch((err) => {
+  // 使用 cleanDataForFirestore 過濾掉包含 repeatConfig: undefined 等非法值
+  const cleanedPayload = cleanDataForFirestore(rawPayload);
+
+  setDoc(docRef, cleanedPayload, { merge: true }).catch((err) => {
     console.error("Firebase 寫入失敗:", err);
   });
 }
@@ -2306,25 +2309,34 @@ function generateRecurringInstances(baseTask, cfg, fromDateStr) {
   const baseEnd = new Date(baseTask.endDate || baseTask.startDate);
   const durationDays = Math.round((baseEnd - baseStart) / 86400000);
 
-  function pushInstance(dateObj, idx) {
-    if (endType === 'on_date' && endDateObj && dateObj > endDateObj) return false;
-    if (endType === 'after_count' && instances.length >= endCount) return false;
-    const instanceDateStr = formatDate(dateObj);
-    const instanceEndDate = new Date(dateObj);
-    instanceEndDate.setDate(instanceEndDate.getDate() + durationDays);
-    const isFirst = instances.length === 0;
-    instances.push({
-      ...baseTask,
-      id: isFirst ? baseTask.id : (String(baseTask.id) + '_r' + instances.length),
-      seriesId: baseTask.id,
-      date: instanceDateStr,
-      startDate: instanceDateStr,
-      endDate: formatDate(instanceEndDate),
-      repeatConfig: isFirst ? cfg : undefined,
-      completed: false
-    });
-    return true;
+function pushInstance(dateObj, idx) {
+  if (endType === 'on_date' && endDateObj && dateObj > endDateObj) return false;
+  if (endType === 'after_count' && instances.length >= endCount) return false;
+  const instanceDateStr = formatDate(dateObj);
+  const instanceEndDate = new Date(dateObj);
+  instanceEndDate.setDate(instanceEndDate.getDate() + durationDays);
+  const isFirst = instances.length === 0;
+
+  const instanceTask = {
+    ...baseTask,
+    id: isFirst ? baseTask.id : (String(baseTask.id) + '_r' + instances.length),
+    seriesId: baseTask.id,
+    date: instanceDateStr,
+    startDate: instanceDateStr,
+    endDate: formatDate(instanceEndDate),
+    completed: false
+  };
+
+  // 僅第一筆寫入 repeatConfig，其餘子行程省略該 key（避免賦予 undefined）
+  if (isFirst) {
+    instanceTask.repeatConfig = cfg;
+  } else {
+    delete instanceTask.repeatConfig;
   }
+
+  instances.push(instanceTask);
+  return true;
+}
 
   const hardStop = new Date(fromDateStr);
   hardStop.setFullYear(hardStop.getFullYear() + 2);
