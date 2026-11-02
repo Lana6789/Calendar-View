@@ -175,9 +175,8 @@ let editingSubtaskTarget = null;
 // 重複設定暫存
 let pendingRepeatConfig = null;
 
-// 擴充預設顏色選項，新增圖片中的暖黃色 (#fbbf24)
+// 預設顏色選項
 const PRESET_BASE_COLORS = [
-  // 第一列
   { name: '暗紅', hex: '#9f1239' },
   { name: '桃紅', hex: '#e11d48' },
   { name: '珊瑚紅', hex: '#f87171' },
@@ -193,7 +192,6 @@ const PRESET_BASE_COLORS = [
   { name: '草綠', hex: '#65a30d' },
   { name: '深綠', hex: '#15803d' },
   { name: '薄荷綠', hex: '#10b981' },
-  // 第二列
   { name: '藍綠', hex: '#0d9488' },
   { name: '天藍', hex: '#0284c7' },
   { name: '亮藍', hex: '#2563eb' },
@@ -207,7 +205,6 @@ const PRESET_BASE_COLORS = [
   { name: '淺灰', hex: '#9ca3af' }
 ];
 
-// 預設選取顏色設定為明黃色（#f59e0b）[cite: 72]
 let selectedColorHex = '#2563eb';
 
 const DEFAULT_COLOR_LEGENDS = PRESET_BASE_COLORS.slice(0, 11).map((c, i) => ({
@@ -216,7 +213,6 @@ const DEFAULT_COLOR_LEGENDS = PRESET_BASE_COLORS.slice(0, 11).map((c, i) => ({
   label: c.name
 }));
 
-// 將主月檢視與個人行程的 Task Color Legend 獨立開來[cite: 72]
 let colorLegends = JSON.parse(localStorage.getItem('calendar_color_legends') || 'null') || [...DEFAULT_COLOR_LEGENDS];
 let isLegendHidden = JSON.parse(localStorage.getItem('calendar_is_legend_hidden') || 'false');
 
@@ -238,9 +234,9 @@ let selectedSemesterId = 'sem_115_1';
 let editingSemesterId = null;
 let currentWeekOffset = 0;
 
-let tasks = [];
-let personalTasks = []; // 個人行程資料陣列[cite: 72]
-let subtaskPageTasks = [];
+let tasks = JSON.parse(localStorage.getItem('calendar_tasks') || 'null') || [];
+let personalTasks = JSON.parse(localStorage.getItem('calendar_personal_tasks') || 'null') || [];
+let subtaskPageTasks = JSON.parse(localStorage.getItem('calendar_subtask_page_tasks') || 'null') || [];
 let courseAttendance = {};
 let courseTimeOverrides = {};
 
@@ -249,7 +245,7 @@ initTimeLabels();
 initPresetColorPalette();
 renderView();
 
-// Firebase Auth[cite: 72]
+// Firebase Auth
 const handleSignIn = () => {
   signInWithPopup(auth, googleProvider).catch((err) => {
     console.error("登入失敗:", err);
@@ -293,7 +289,6 @@ onAuthStateChanged(auth, (user) => {
         courseAttendance = cloudData.courseAttendance || {};
         courseTimeOverrides = cloudData.courseTimeOverrides || {};
 
-        // 主月檢視 Color Legend 資料同步[cite: 72]
         if (cloudData.colorLegends && Array.isArray(cloudData.colorLegends)) {
           colorLegends = cloudData.colorLegends;
           localStorage.setItem('calendar_color_legends', JSON.stringify(colorLegends));
@@ -303,7 +298,6 @@ onAuthStateChanged(auth, (user) => {
           localStorage.setItem('calendar_is_legend_hidden', JSON.stringify(isLegendHidden));
         }
 
-        // 個人行程安排 Color Legend 資料同步[cite: 72]
         if (cloudData.personalColorLegends && Array.isArray(cloudData.personalColorLegends)) {
           personalColorLegends = cloudData.personalColorLegends;
           localStorage.setItem('calendar_personal_color_legends', JSON.stringify(personalColorLegends));
@@ -334,6 +328,18 @@ onAuthStateChanged(auth, (user) => {
     renderView();
   }
 });
+
+function cleanDataForFirestore(obj) {
+  if (Array.isArray(obj)) return obj.map(cleanDataForFirestore);
+  if (obj !== null && typeof obj === 'object') {
+    const cleaned = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v !== undefined) cleaned[k] = cleanDataForFirestore(v);
+    }
+    return cleaned;
+  }
+  return obj;
+}
 
 function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
   try {
@@ -372,7 +378,6 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
   });
 }
 
-// 初始化調色盤（直接選取顏色）[cite: 72]
 function initPresetColorPalette() {
   const container = document.getElementById('preset-color-palette');
   const preview = document.getElementById('selected-color-preview');
@@ -404,7 +409,6 @@ function initPresetColorPalette() {
   if (preview) preview.style.backgroundColor = selectedColorHex;
 }
 
-// 初始化新增 Legend 視窗中的調色盤[cite: 72]
 function initLegendColorPalette() {
   const container = document.getElementById('legend-color-palette');
   if (!container) return;
@@ -432,7 +436,6 @@ function initLegendColorPalette() {
   });
 }
 
-// Helpers[cite: 72]
 function formatDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -604,7 +607,6 @@ function renderView() {
   }
 }
 
-// 分流渲染與維護 Color Legend[cite: 72]
 function renderColorLegend() {
   const isPersonal = currentMode === 'personal';
   const targetBar = isPersonal ? personalColorLegendBar : colorLegendBar;
@@ -660,7 +662,6 @@ function renderColorLegend() {
   });
 }
 
-// 綁定個人行程頁面與主月檢視頁面的 Color Legend 按鈕[cite: 72]
 [btnAddLegend, personalBtnAddLegend].forEach(btn => {
   if (btn) {
     btn.addEventListener('click', () => {
@@ -703,7 +704,7 @@ if (saveLegendBtn) {
   });
 }
 
-// 個人行程安排月檢視渲染[cite: 72]
+// 個人行程安排月檢視渲染 (已移除時間顯示)
 function renderPersonalCalendar() {
   if (!personalCalendarDays) return;
   personalCalendarDays.innerHTML = '';
@@ -759,10 +760,11 @@ function renderPersonalCalendar() {
       }
 
       const impMark = task.important ? '❗ ' : '';
-      const timeRange = task.startTime ? `${task.startTime} ` : '';
       const isMultiDay = task.startDate && task.endDate && task.startDate !== task.endDate;
       const multiDayTag = isMultiDay ? ' (跨日)' : '';
-      taskBadge.textContent = `${impMark}${timeRange}${task.text}${multiDayTag}`;
+      
+      // 直接顯示任務名稱，不再前綴時間區間
+      taskBadge.textContent = `${impMark}${task.text}${multiDayTag}`;
       tasksContainer.appendChild(taskBadge);
     });
 
@@ -777,7 +779,7 @@ function renderPersonalCalendar() {
   }
 }
 
-// 主月檢視渲染[cite: 72]
+// 主月檢視渲染 (已移除時間顯示)
 function renderCalendar() {
   if (!calendarDays) return;
   calendarDays.innerHTML = '';
@@ -834,10 +836,11 @@ function renderCalendar() {
       }
 
       const impMark = task.important ? '❗ ' : '';
-      const timeRange = task.startTime ? `${task.startTime} ` : '';
       const isMultiDay = task.startDate && task.endDate && task.startDate !== task.endDate;
       const multiDayTag = isMultiDay ? ' (跨日)' : '';
-      taskBadge.textContent = `${impMark}${timeRange}${task.text}${multiDayTag}`;
+
+      // 直接顯示任務名稱，不再前綴時間區間
+      taskBadge.textContent = `${impMark}${task.text}${multiDayTag}`;
       tasksContainer.appendChild(taskBadge);
     });
 
@@ -1407,7 +1410,6 @@ if (viewCourseBtn) {
   });
 }
 
-// 周檢視 render
 function renderWeekView() {
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
@@ -1456,7 +1458,6 @@ function renderWeekView() {
       col.appendChild(hourGrid);
     }
 
-    // 周檢視同時包含主任務與個人行程安排[cite: 72]
     const dayTasks = tasks.filter((t) => isTaskInDate(t, dateStr) && !t.isCourseExam);
     const dayPersonalTasks = personalTasks.filter((t) => isTaskInDate(t, dateStr));
     const dayCourseEvents = getActiveCourseEventsForDate(dateStr);
@@ -1986,7 +1987,6 @@ function openModal() {
   const scopeRow = document.getElementById('repeat-edit-scope-row');
   if (scopeRow) scopeRow.style.display = 'none';
 
-  // 開啟 Modal 時，預設選取明黃色（#f59e0b）[cite: 72]
   selectedColorHex = '#2563eb';
   initPresetColorPalette();
 
@@ -2106,7 +2106,6 @@ function renderModalTasks() {
     const li = document.createElement('li');
     li.className = 'modal-task-item';
 
-    // 個人行程安排頁面不包含核取方塊 (checkbox)[cite: 72]
     if (!isPersonal) {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -2127,7 +2126,6 @@ function renderModalTasks() {
     const isRecurring = !!(task.seriesId || task.repeatConfig);
     const span = document.createElement('span');
     span.className = 'task-text';
-    // 個人行程不使用刪除線[cite: 72]
     if (!isPersonal && task.completed) span.classList.add('completed');
     span.textContent = `${task.startTime ? `[${task.startTime}-${task.endTime}] ` : ''}${task.text}${task.important ? ' [重要]' : ''}${isRecurring ? ' 🔁' : ''}`;
 
@@ -2298,7 +2296,6 @@ function saveOrAddTask() {
   renderView();
 }
 
-// 重複功能 helper[cite: 72]
 function generateRecurringInstances(baseTask, cfg, fromDateStr) {
   const instances = [];
   const maxInstances = 500;
@@ -2396,7 +2393,6 @@ function updateRepeatSummaryUI() {
   if (clearBtn) clearBtn.style.display = pendingRepeatConfig ? 'flex' : 'none';
 }
 
-// 重複設定 Modal 控制[cite: 72]
 const repeatConfigModal = document.getElementById('repeat-config-modal');
 const closeRepeatConfigBtn = document.getElementById('close-repeat-config-btn');
 const rcCancelBtn = document.getElementById('rc-cancel-btn');
@@ -2542,7 +2538,6 @@ window.addEventListener('click', (e) => {
   if (e.target === legendModal && legendModal) legendModal.style.display = 'none';
 });
 
-// 側邊欄切換與點擊事件[cite: 72]
 if (viewPersonalBtn) viewPersonalBtn.addEventListener('click', () => { currentMode = 'personal'; setActiveNavBtn(viewPersonalBtn); renderView(); });
 if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => { currentMode = 'month'; setActiveNavBtn(viewMonthBtn); renderView(); });
 if (viewWeekBtn) viewWeekBtn.addEventListener('click', () => { currentMode = 'week'; setActiveNavBtn(viewWeekBtn); renderView(); });

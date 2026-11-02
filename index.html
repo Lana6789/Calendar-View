@@ -21,7 +21,7 @@
                 <div class="sidebar-brand">Calendar View</div>
                 <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="關閉選單">&times;</button>
             </div>
-            
+
             <!-- 依指定順序排列收納欄按鈕 -->
             <button id="view-personal-btn" class="nav-btn active">
                 <span class="icon">📆</span>
@@ -58,9 +58,12 @@
             <!-- 行動端登入區 -->
             <div class="sidebar-user-auth" id="sidebar-user-auth">
                 <div id="sidebar-user-info" style="display: none; align-items: center; gap: 8px; width: 100%;">
-                    <img id="sidebar-user-photo" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%;">
-                    <span id="sidebar-user-name" style="font-size: 0.88rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                    <button id="sidebar-logout-btn" class="btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;">登出</button>
+                    <img id="sidebar-user-photo" src="" alt="User"
+                        style="width: 32px; height: 32px; border-radius: 50%;">
+                    <span id="sidebar-user-name"
+                        style="font-size: 0.88rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <button id="sidebar-logout-btn" class="btn-secondary"
+                        style="padding: 4px 8px; font-size: 0.8rem;">登出</button>
                 </div>
                 <button id="sidebar-login-btn" class="btn-secondary"
                     style="width: 100%; background-color: #4285f4; color: white; border: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
@@ -96,7 +99,8 @@
                     <div id="user-info" style="display: none; align-items: center; gap: 8px;">
                         <img id="user-photo" src="" alt="User" style="width: 32px; height: 32px; border-radius: 50%;">
                         <span id="user-name" style="font-size: 0.9rem; font-weight: 500;"></span>
-                        <button id="logout-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;">登出</button>
+                        <button id="logout-btn" class="btn-secondary"
+                            style="padding: 4px 10px; font-size: 0.8rem;">登出</button>
                     </div>
                     <button id="login-btn" class="btn-secondary"
                         style="background-color: #4285f4; color: white; border: none; font-weight: 500; display: flex; align-items: center; gap: 6px;">
@@ -108,7 +112,13 @@
             <!-- 3. Personal Schedule View (個人行程安排) -->
             <main id="personal-view" class="view-container">
                 <div class="calendar-weekdays">
-                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                    <div>週日</div>
+                    <div>週一</div>
+                    <div>週二</div>
+                    <div>週三</div>
+                    <div>週四</div>
+                    <div>週五</div>
+                    <div>週六</div>
                 </div>
                 <div class="calendar-days" id="personal-calendar-days"></div>
 
@@ -117,14 +127,17 @@
                         <div class="legend-header">
                             <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
                             <div class="legend-header-actions">
-                                <button type="button" id="personal-btn-add-legend" class="btn-legend-action" style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
-                                <button type="button" id="personal-btn-toggle-legend" class="btn-legend-action" title="隱藏說明">隱藏說明 ✕</button>
+                                <button type="button" id="personal-btn-add-legend" class="btn-legend-action"
+                                    style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
+                                <button type="button" id="personal-btn-toggle-legend" class="btn-legend-action"
+                                    title="隱藏說明">隱藏說明 ✕</button>
                             </div>
                         </div>
                         <div class="legend-items" id="personal-legend-items"></div>
                     </div>
                     <div id="personal-show-legend-container" class="show-legend-container" style="display: none;">
-                        <button type="button" id="personal-btn-show-legend" class="btn-secondary" style="font-size: 0.8rem; padding: 5px 12px;">
+                        <button type="button" id="personal-btn-show-legend" class="btn-secondary"
+                            style="font-size: 0.8rem; padding: 5px 12px;">
                             💡 顯示任務顏色說明
                         </button>
                     </div>
@@ -134,7 +147,13 @@
             <!-- 4. Month View (主月檢視) -->
             <main id="month-view" class="view-container hidden">
                 <div class="calendar-weekdays">
-                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                    <div>週日</div>
+                    <div>週一</div>
+                    <div>週二</div>
+                    <div>週三</div>
+                    <div>週四</div>
+                    <div>週五</div>
+                    <div>週六</div>
                 </div>
                 <div class="calendar-days" id="calendar-days"></div>
 
@@ -143,14 +162,17 @@
                         <div class="legend-header">
                             <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
                             <div class="legend-header-actions">
-                                <button type="button" id="btn-add-legend" class="btn-legend-action" style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
-                                <button type="button" id="btn-toggle-legend" class="btn-legend-action" title="隱藏說明">隱藏說明 ✕</button>
+                                <button type="button" id="btn-add-legend" class="btn-legend-action"
+                                    style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
+                                <button type="button" id="btn-toggle-legend" class="btn-legend-action" title="隱藏說明">隱藏說明
+                                    ✕</button>
                             </div>
                         </div>
                         <div class="legend-items" id="legend-items"></div>
                     </div>
                     <div id="show-legend-container" class="show-legend-container" style="display: none;">
-                        <button type="button" id="btn-show-legend" class="btn-secondary" style="font-size: 0.8rem; padding: 5px 12px;">
+                        <button type="button" id="btn-show-legend" class="btn-secondary"
+                            style="font-size: 0.8rem; padding: 5px 12px;">
                             💡 顯示任務顏色說明
                         </button>
                     </div>
@@ -205,7 +227,13 @@
             <!-- 8. Subtask View -->
             <main id="subtask-view" class="view-container hidden">
                 <div class="calendar-weekdays">
-                    <div>週日</div><div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div>
+                    <div>週日</div>
+                    <div>週一</div>
+                    <div>週二</div>
+                    <div>週三</div>
+                    <div>週四</div>
+                    <div>週五</div>
+                    <div>週六</div>
                 </div>
                 <div class="calendar-days" id="subtask-calendar-days"></div>
 
@@ -226,7 +254,8 @@
                                 <input type="time" id="subtask-end-time" value="10:00" step="60">
                             </div>
                             <div class="form-row">
-                                <input type="text" id="subtask-task-input" placeholder="輸入頁面專屬細項任務..." autocomplete="off">
+                                <input type="text" id="subtask-task-input" placeholder="輸入頁面專屬細項任務..."
+                                    autocomplete="off">
                             </div>
                             <div class="form-row">
                                 <textarea id="subtask-desc-input" placeholder="輸入詳細說明 / 備註..." rows="2"></textarea>
@@ -241,29 +270,42 @@
             <!-- 9. Course View -->
             <main id="course-view" class="view-container hidden">
                 <div class="course-page-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                        <div id="semester-tabs-bar" class="semester-tabs-bar" style="display: flex; gap: 10px; border-bottom: 2px solid #dadce0; overflow-x: auto; padding-bottom: 4px; flex: 1;"></div>
-                        <button id="open-add-semester-btn" class="btn-secondary" style="background-color: #1a73e8; color: white; border: none; font-weight: 500;">+ 新增學期方案</button>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <div id="semester-tabs-bar" class="semester-tabs-bar"
+                            style="display: flex; gap: 10px; border-bottom: 2px solid #dadce0; overflow-x: auto; padding-bottom: 4px; flex: 1;">
+                        </div>
+                        <button id="open-add-semester-btn" class="btn-secondary"
+                            style="background-color: #1a73e8; color: white; border: none; font-weight: 500;">+
+                            新增學期方案</button>
                     </div>
 
                     <div id="active-semester-panel">
-                        <div class="course-header-bar" style="border-radius: 8px; border: 1px solid #dadce0; margin-bottom: 16px;">
+                        <div class="course-header-bar"
+                            style="border-radius: 8px; border: 1px solid #dadce0; margin-bottom: 16px;">
                             <div class="course-week-selector">
                                 <button id="course-prev-week" class="btn-secondary">&lt; 上一週</button>
                                 <span id="course-week-title" class="course-week-title">第 1 週</span>
                                 <button id="course-next-week" class="btn-secondary">下一週 &gt;</button>
-                                <button id="course-today-btn" class="btn-secondary" style="font-weight: 500;">今日</button>
+                                <button id="course-today-btn" class="btn-secondary"
+                                    style="font-weight: 500;">今日</button>
                             </div>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <button id="toggle-link-week-btn" class="btn-secondary" style="font-weight: bold;">🔗 連結至周檢視：已關閉</button>
-                                <button id="open-add-course-btn" class="btn-secondary" style="background-color: #1a73e8; color: white;">+ 新增課程</button>
+                                <button id="toggle-link-week-btn" class="btn-secondary" style="font-weight: bold;">🔗
+                                    連結至周檢視：已關閉</button>
+                                <button id="open-add-course-btn" class="btn-secondary"
+                                    style="background-color: #1a73e8; color: white;">+ 新增課程</button>
                                 <button id="edit-semester-info-btn" class="btn-secondary">⚙️ 設定學期資訊</button>
                             </div>
                         </div>
 
                         <div class="course-grid-container">
                             <div class="calendar-weekdays course-weekdays">
-                                <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div>
+                                <div>週一</div>
+                                <div>週二</div>
+                                <div>週三</div>
+                                <div>週四</div>
+                                <div>週五</div>
                             </div>
                             <div class="course-days-grid" id="course-days-grid"></div>
                         </div>
@@ -276,7 +318,8 @@
     <!-- 行動端引導 Modal -->
     <div id="guide-modal" class="modal">
         <div class="modal-content" style="text-align: center; max-width: 380px;">
-            <div class="modal-header" style="justify-content: center; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+            <div class="modal-header"
+                style="justify-content: center; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                 <h3 id="guide-modal-title" style="font-size: 1.1rem; color: #1a73e8;">💡 頁面功能指南</h3>
             </div>
             <div class="modal-body" style="padding: 16px 8px;">
@@ -284,7 +327,8 @@
                 <p id="guide-modal-desc" style="font-size: 0.92rem; color: #3c4043; line-height: 1.5;"></p>
             </div>
             <div style="margin-top: 12px;">
-                <button id="close-guide-modal-btn" class="btn-secondary" style="background-color: #1a73e8; color: white; border: none; width: 100%; padding: 10px; font-weight: bold;">我知道了</button>
+                <button id="close-guide-modal-btn" class="btn-secondary"
+                    style="background-color: #1a73e8; color: white; border: none; width: 100%; padding: 10px; font-weight: bold;">我知道了</button>
             </div>
         </div>
     </div>
@@ -306,7 +350,8 @@
                         <label>代表意義名稱：</label>
                         <input type="text" id="legend-label-input" placeholder="例如：重要工作、個人運動..." autocomplete="off">
                     </div>
-                    <button type="button" id="save-legend-btn" style="padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px;">儲存顏色意義</button>
+                    <button type="button" id="save-legend-btn"
+                        style="padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px;">儲存顏色意義</button>
                 </div>
             </div>
         </div>
@@ -340,12 +385,13 @@
                         <input type="checkbox" id="important-checkbox">
                         <label for="important-checkbox" style="cursor: pointer;">標示為「重要」事項</label>
                     </div>
-                    
+
                     <!-- 色彩選擇區 (已移除調深/調淺，僅保留調色盤與顏色預覽點) -->
                     <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                         <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
                             <label>色彩分類：</label>
-                            <span id="selected-color-preview" style="display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 1px solid #ccc; background-color: #f59e0b;"></span>
+                            <span id="selected-color-preview"
+                                style="display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 1px solid #ccc; background-color: #f59e0b;"></span>
                         </div>
                         <div class="preset-color-palette" id="preset-color-palette"></div>
                     </div>
@@ -361,7 +407,8 @@
                         <div class="repeat-summary-box" id="repeat-summary-box">
                             <span id="repeat-summary-text">不重複</span>
                             <button type="button" id="btn-open-repeat" class="btn-repeat-edit">設定重複</button>
-                            <button type="button" id="btn-clear-repeat" class="btn-repeat-clear" style="display:none" title="清除重複設定">✕</button>
+                            <button type="button" id="btn-clear-repeat" class="btn-repeat-clear" style="display:none"
+                                title="清除重複設定">✕</button>
                         </div>
                     </div>
                     <div id="repeat-edit-scope-row" class="form-row repeat-edit-scope-row" style="display:none">
@@ -406,7 +453,8 @@
                     </label>
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 16px;">
-                    <button id="confirm-delete-scope-btn" class="btn-secondary" style="flex: 1; background-color: #d93025; color: white; border: none; font-weight: bold;">確定刪除</button>
+                    <button id="confirm-delete-scope-btn" class="btn-secondary"
+                        style="flex: 1; background-color: #d93025; color: white; border: none; font-weight: bold;">確定刪除</button>
                     <button id="cancel-delete-scope-btn" class="btn-secondary" style="flex: 1;">取消</button>
                 </div>
             </div>
@@ -451,13 +499,17 @@
                         <input type="color" id="c-color" value="#ffb6c1">
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button id="save-course-btn" style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存課程資訊</button>
-                        <button id="delete-course-btn" style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除課程</button>
+                        <button id="save-course-btn"
+                            style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存課程資訊</button>
+                        <button id="delete-course-btn"
+                            style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除課程</button>
                     </div>
                 </div>
 
-                <div id="attendance-section" style="display: none; margin-top: 16px; border-top: 1px solid #dadce0; padding-top: 12px;">
-                    <h4 id="att-section-title" style="font-size: 0.95rem; margin-bottom: 8px; color: #3c4043;">日期 出缺席與考試狀態</h4>
+                <div id="attendance-section"
+                    style="display: none; margin-top: 16px; border-top: 1px solid #dadce0; padding-top: 12px;">
+                    <h4 id="att-section-title" style="font-size: 0.95rem; margin-bottom: 8px; color: #3c4043;">日期
+                        出缺席與考試狀態</h4>
                     <div class="status-sub-title">📌 出缺席紀錄</div>
                     <div class="status-btn-group">
                         <button class="att-status-btn" data-status="出席">出席</button>
@@ -504,8 +556,10 @@
                         <input type="date" id="sem-end-date">
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button id="save-semester-btn" style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存學期設定</button>
-                        <button id="delete-semester-btn" style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除此學期</button>
+                        <button id="save-semester-btn"
+                            style="flex: 1; padding: 8px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">儲存學期設定</button>
+                        <button id="delete-semester-btn"
+                            style="display: none; padding: 8px 12px; background-color: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">刪除此學期</button>
                     </div>
                 </div>
             </div>
@@ -540,8 +594,12 @@
                         <textarea id="subtask-edit-desc-input" placeholder="輸入詳細說明 / 備註..." rows="3"></textarea>
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button id="subtask-edit-save-btn" style="flex: 1; padding: 10px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">儲存修改</button>
-                        <button id="subtask-edit-cancel-btn" class="btn-secondary" style="padding: 10px 16px;">取消</button>
+                        <button id="subtask-edit-save-btn"
+                            style="flex: 1; padding: 10px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">儲存修改</button>
+                        <button id="subtask-edit-delete-btn" type="button" class="delete-btn"
+                            style="padding: 10px 16px; background-color: #ea4335; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">刪除</button>
+                        <button id="subtask-edit-cancel-btn" class="btn-secondary"
+                            style="padding: 10px 16px;">取消</button>
                     </div>
                 </div>
             </div>
@@ -576,13 +634,20 @@
                 <div class="rc-section" id="rc-weekdays-section">
                     <label class="rc-label">重複日期</label>
                     <div class="rc-weekday-picker">
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="0"><span>日</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="1"><span>一</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="2"><span>二</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="3"><span>三</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="4"><span>四</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="5"><span>五</span></label>
-                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday" value="6"><span>六</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="0"><span>日</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="1"><span>一</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="2"><span>二</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="3"><span>三</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="4"><span>四</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="5"><span>五</span></label>
+                        <label class="rc-day-btn"><input type="checkbox" name="rc-weekday"
+                                value="6"><span>六</span></label>
                     </div>
                 </div>
 
