@@ -625,6 +625,22 @@ body {
   margin-top: 2px;
 }
 
+.week-task-card.is-subtask-card {
+  border-left-width: 5px !important;
+}
+
+.week-subtask-tag {
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.3);
+  font-size: 0.7em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 .week-task-card.completed {
   background-color: #f1f3f4 !important;
   border-left-color: #70757a !important;
@@ -2122,4 +2138,26 @@ body {
   .repeat-scope-options {
     gap: 4px;
   }
+}
+
+/* Global Toast Notification */
+.global-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #202124;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.global-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
