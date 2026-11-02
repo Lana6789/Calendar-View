@@ -15,11 +15,3 @@
 * **自動時間排序**：所有視圖與清單皆嚴格按照「日期舊至新 ➔ 時間早至晚」排列。
 * **純原生、零套件**：100% 使用 HTML5, CSS3 與 Vanilla JavaScript，無任何外部第三方套件依賴。
 * **本機持久化**：透過 `localStorage` 保存所有行程與設定，關閉瀏覽器資料不丟失。
-
----
-
-## 🚀 快速開始 (Quick Start)
-
-1. **下載或 Clone 專案**：
-   ```bash
-   git clone [https://github.com/Lana6789/Calendar-View.git](https://github.com/Lana6789/Calendar-View.git)
