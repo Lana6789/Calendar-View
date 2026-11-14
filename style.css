@@ -31,6 +31,7 @@ body {
   overflow-y: auto;
   transition: width 0.25s ease, transform 0.28s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .sidebar.collapsed {
@@ -166,6 +167,7 @@ body {
 /* Main Area */
 .main-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
@@ -242,10 +244,10 @@ body {
   display: none !important;
 }
 
-/* Month View & Task Badges */
+/* Month View & Task Badges — 嚴格鎖定欄寬與省略號截斷 */
 .calendar-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   text-align: center;
   font-weight: 600;
   color: #70757a;
@@ -255,14 +257,15 @@ body {
 }
 
 .course-weekdays {
-  grid-template-columns: repeat(5, 1fr) !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
 }
 
 .calendar-days {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: minmax(110px, 1fr);
   border-left: 1px solid #dadce0;
+  width: 100%;
 }
 
 .day-cell {
@@ -273,6 +276,8 @@ body {
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .day-cell:hover:not(.empty) {
@@ -283,6 +288,7 @@ body {
   display: flex;
   justify-content: space-between;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .day-number {
@@ -306,6 +312,9 @@ body {
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+  width: 100%;
 }
 
 .color-legend-wrapper {
@@ -449,6 +458,10 @@ body {
 }
 
 .task-badge {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background-color: #e8f0fe;
   color: #1967d2;
   padding: 3px 6px;
@@ -467,6 +480,10 @@ body {
 }
 
 .subtask-badge {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background-color: #e8f8f0;
   color: #27ae60;
   border-left: 3px solid #27ae60;
@@ -510,7 +527,7 @@ body {
 
 .week-header-row {
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-columns: 60px repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid #dadce0;
   background-color: #ffffff;
   position: sticky;
@@ -563,6 +580,7 @@ body {
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  flex-shrink: 0;
 }
 
 .time-label {
@@ -576,14 +594,16 @@ body {
 
 .week-columns {
   flex: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .week-column {
   border-right: 1px solid #dadce0;
   position: relative;
   height: 100%;
+  min-width: 0;
 }
 
 .hour-grid {
@@ -616,13 +636,18 @@ body {
 .card-title {
   font-weight: bold;
   line-height: 1.2;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-time {
   font-size: 0.68rem;
   opacity: 0.9;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .week-task-card.is-subtask-card {
@@ -657,8 +682,8 @@ body {
 
 .matrix-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 16px;
   height: 100%;
   grid-template-areas: 
@@ -679,6 +704,7 @@ body {
   flex-direction: column;
   border: 1px solid #f6e0b5;
   overflow: hidden;
+  min-width: 0;
 }
 
 .matrix-box-header {
@@ -697,6 +723,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .matrix-item {
@@ -706,6 +733,7 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.15s;
+  min-width: 0;
 }
 
 .matrix-item:hover {
@@ -716,6 +744,9 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
   color: #202124;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .matrix-item-date {
@@ -729,6 +760,7 @@ body {
   color: #5f6368;
   margin-top: 4px;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Overdue View */
@@ -758,6 +790,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -765,24 +798,32 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .overdue-checkbox {
   width: 20px;
   height: 20px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .overdue-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .overdue-title {
   font-size: 1rem;
   font-weight: bold;
   color: #202124;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .overdue-old-date {
@@ -794,6 +835,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .btn-reschedule {
@@ -804,6 +846,7 @@ body {
   border-radius: 4px;
   font-size: 0.85rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .btn-reschedule:hover {
@@ -909,7 +952,7 @@ body {
 
 .course-days-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   flex: 1;
   border-left: 1px solid #dadce0;
 }
@@ -923,6 +966,7 @@ body {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .course-day-header {
@@ -942,6 +986,7 @@ body {
   flex-direction: column;
   gap: 4px;
   transition: transform 0.15s;
+  min-width: 0;
 }
 
 .course-card:hover {
@@ -958,12 +1003,18 @@ body {
   font-weight: bold;
   font-size: 0.88rem;
   color: #202124;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .course-time,
 .course-loc {
   font-size: 0.75rem;
   color: #5f6368;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .course-status-badge {
@@ -1075,6 +1126,7 @@ body {
 
 .timeline-body-col {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1097,6 +1149,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .timeline-row.completed .timeline-text {
@@ -1151,6 +1204,14 @@ body {
   align-items: center;
   margin-bottom: 16px;
   flex-shrink: 0;
+  gap: 10px;
+}
+
+.modal-header h3 {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .modal-body {
@@ -1164,6 +1225,7 @@ body {
   font-size: 1.5rem;
   cursor: pointer;
   color: #70757a;
+  flex-shrink: 0;
 }
 
 .input-form {
@@ -1215,6 +1277,7 @@ body {
   height: 10px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .task-list {
@@ -1227,11 +1290,16 @@ body {
   padding: 8px 0;
   border-bottom: 1px solid #f1f3f4;
   gap: 8px;
+  min-width: 0;
 }
 
 .task-text {
   flex: 1;
+  min-width: 0;
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .task-text.completed {
@@ -1247,6 +1315,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 .empty-msg {
@@ -1303,7 +1372,7 @@ body {
   }
 
   .matrix-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 12px;
     height: auto;
@@ -1450,6 +1519,7 @@ body {
   .day-cell {
     padding: 2px;
     min-width: 0;
+    overflow: hidden;
   }
 
   .day-number {
@@ -1522,7 +1592,7 @@ body {
   }
 
   .matrix-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 12px;
     height: auto;
@@ -2160,4 +2230,67 @@ body {
 .global-toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Week View Header Bar & Switcher (週/日切換) */
+.week-view-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dadce0;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.week-view-switcher {
+  display: inline-flex;
+  background-color: #f1f3f4;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.week-switcher-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #3c4043;
+  transition: all 0.2s ease;
+}
+
+.week-switcher-btn:hover {
+  background-color: #e8eaed;
+  color: #202124;
+}
+
+.week-switcher-btn.active {
+  background-color: #ffffff;
+  color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  font-weight: 600;
+}
+
+.week-header-row.day-header-row {
+  grid-template-columns: 60px minmax(0, 1fr) !important;
+}
+
+.week-columns.day-columns {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.week-body-scroll.day-body-scroll {
+  min-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .week-view-header-bar {
+    justify-content: flex-end;
+    padding: 6px 12px;
+  }
 }

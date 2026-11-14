@@ -62,6 +62,9 @@ const personalLegendItems = document.getElementById('personal-legend-items');
 
 const monthView = document.getElementById('month-view');
 const weekView = document.getElementById('week-view');
+const weekSwitchWeekBtn = document.getElementById('week-switch-week-btn');
+const weekSwitchDayBtn = document.getElementById('week-switch-day-btn');
+let weekViewSubMode = 'week'; // 'week' | 'day'
 const matrixView = document.getElementById('matrix-view');
 const overdueView = document.getElementById('overdue-view');
 const overdueList = document.getElementById('overdue-list');
@@ -98,6 +101,7 @@ const subtaskEditTaskInput = document.getElementById('subtask-edit-task-input');
 const subtaskEditDescInput = document.getElementById('subtask-edit-desc-input');
 const subtaskEditSaveBtn = document.getElementById('subtask-edit-save-btn');
 const subtaskEditCancelBtn = document.getElementById('subtask-edit-cancel-btn');
+const subtaskEditDeleteBtn = document.getElementById('subtask-edit-delete-btn');
 
 const courseView = document.getElementById('course-view');
 const courseDaysGrid = document.getElementById('course-days-grid');
@@ -1414,40 +1418,95 @@ if (viewCourseBtn) {
 }
 
 function renderWeekView() {
-  const startOfWeek = new Date(currentDate);
-  startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+  if (weekSwitchWeekBtn) weekSwitchWeekBtn.classList.toggle('active', weekViewSubMode === 'week');
+  if (weekSwitchDayBtn) weekSwitchDayBtn.classList.toggle('active', weekViewSubMode === 'day');
 
-  const year = startOfWeek.getFullYear();
-  const month = startOfWeek.getMonth() + 1;
-  if (viewTitle) viewTitle.textContent = `${year}年 ${month}月`;
+  const weekBodyScroll = document.querySelector('#week-view .week-body-scroll');
+  if (weekHeaderRow) {
+    weekHeaderRow.classList.toggle('day-header-row', weekViewSubMode === 'day');
+  }
+  if (weekColumns) {
+    weekColumns.classList.toggle('day-columns', weekViewSubMode === 'day');
+  }
+  if (weekBodyScroll) {
+    weekBodyScroll.classList.toggle('day-body-scroll', weekViewSubMode === 'day');
+  }
 
   const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+  const todayStr = formatDate(new Date());
+  const weekDates = [];
+
+  if (weekViewSubMode === 'week') {
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const sYear = startOfWeek.getFullYear();
+    const sMonth = startOfWeek.getMonth() + 1;
+    const eYear = endOfWeek.getFullYear();
+    const eMonth = endOfWeek.getMonth() + 1;
+
+    if (viewTitle) {
+      if (sYear === eYear && sMonth === eMonth) {
+        viewTitle.textContent = `${sYear}年 ${sMonth}月`;
+      } else if (sYear === eYear) {
+        viewTitle.textContent = `${sYear}年 ${sMonth}月 – ${eMonth}月`;
+      } else {
+        viewTitle.textContent = `${sYear}年${sMonth}月 – ${eYear}年${eMonth}月`;
+      }
+    }
+    if (viewGuideText) viewGuideText.textContent = '此頁面自動整合主要任務與學期課表，提供週次 24 小時時間軸檢視。';
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      const dateStr = formatDate(d);
+      weekDates.push({ dateObj: d, dateStr: dateStr, dayIndex: i });
+    }
+  } else {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const dayDate = currentDate.getDate();
+    const dayOfWeek = currentDate.getDay();
+    const dateStr = formatDate(currentDate);
+
+    if (viewTitle) viewTitle.textContent = `${year}年${month}月${dayDate}日 (${weekDays[dayOfWeek]})`;
+    if (viewGuideText) viewGuideText.textContent = '此頁面自動整合主要任務與學期課表，提供單日 24 小時時間軸檢視。';
+
+    weekDates.push({ dateObj: currentDate, dateStr: dateStr, dayIndex: dayOfWeek });
+  }
+
   if (weekHeaderRow) weekHeaderRow.innerHTML = '<div class="time-corner">GMT+8</div>';
 
-  const weekDates = [];
-  const todayStr = formatDate(new Date());
-
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(startOfWeek);
-    d.setDate(startOfWeek.getDate() + i);
-    const dateStr = formatDate(d);
-    weekDates.push({ dateObj: d, dateStr: dateStr });
-
+  weekDates.forEach(({ dateObj, dateStr, dayIndex }) => {
     const headerCell = document.createElement('div');
     headerCell.className = 'week-header-cell';
 
     const dayName = document.createElement('span');
-    dayName.textContent = weekDays[i];
+    dayName.textContent = weekDays[dayIndex];
 
     const dayNum = document.createElement('span');
     dayNum.className = 'week-day-num';
-    dayNum.textContent = d.getDate();
+    dayNum.textContent = dateObj.getDate();
     if (dateStr === todayStr) dayNum.classList.add('today-num');
 
     headerCell.appendChild(dayName);
     headerCell.appendChild(dayNum);
+
+    if (weekViewSubMode === 'week') {
+      headerCell.style.cursor = 'pointer';
+      headerCell.title = '點擊切換至此日檢視';
+      headerCell.addEventListener('click', () => {
+        currentDate = new Date(`${dateStr}T00:00:00`);
+        selectedDateStr = dateStr;
+        weekViewSubMode = 'day';
+        renderWeekView();
+      });
+    }
+
     if (weekHeaderRow) weekHeaderRow.appendChild(headerCell);
-  }
+  });
 
   if (!weekColumns) return;
   weekColumns.innerHTML = '';
@@ -1502,14 +1561,14 @@ function renderWeekView() {
       card.style.height = `${Math.max(heightPx, 36)}px`;
 
       if (totalOverlaps > 1) {
-        const widthPercent = 85 / totalOverlaps;
-        const leftPercent = groupIndex * (75 / totalOverlaps);
+        const widthPercent = (weekViewSubMode === 'day' ? 92 : 85) / totalOverlaps;
+        const leftPercent = groupIndex * ((weekViewSubMode === 'day' ? 88 : 75) / totalOverlaps);
         card.style.width = `${widthPercent}%`;
         card.style.left = `${leftPercent}%`;
         card.style.zIndex = groupIndex + 3;
       } else {
-        card.style.left = '2px';
-        card.style.right = '2px';
+        card.style.left = weekViewSubMode === 'day' ? '4px' : '2px';
+        card.style.right = weekViewSubMode === 'day' ? '4px' : '2px';
         card.style.zIndex = 2;
       }
 
@@ -1523,6 +1582,7 @@ function renderWeekView() {
       card.innerHTML = `
         <div class="card-title">${impText}${task.text}</div>
         <div class="card-time">${task.startTime || '09:00'} - ${task.endTime || '10:00'}</div>
+        ${(weekViewSubMode === 'day' && task.description) ? `<div class="card-desc" style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">${task.description}</div>` : ''}
       `;
 
       if (!task.isCourse) {
@@ -2539,6 +2599,34 @@ if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 if (subtaskEditSaveBtn) subtaskEditSaveBtn.addEventListener('click', saveSubtaskEdit);
 if (subtaskEditCancelBtn) subtaskEditCancelBtn.addEventListener('click', closeSubtaskEditModal);
 if (closeSubtaskEditModalBtn) closeSubtaskEditModalBtn.addEventListener('click', closeSubtaskEditModal);
+if (subtaskEditDeleteBtn) {
+  subtaskEditDeleteBtn.addEventListener('click', () => {
+    if (!editingSubtaskTarget) return;
+    if (confirm('確定要刪除此細項任務嗎？')) {
+      if (editingSubtaskTarget.originalId) {
+        updateOrAddSubtaskPageOverride(editingSubtaskTarget, { isDeletedInSubtaskView: true });
+      } else {
+        subtaskPageTasks = subtaskPageTasks.filter((t) => t.id !== editingSubtaskTarget.id);
+      }
+      saveAllDataToFirebase();
+      closeSubtaskEditModal();
+      renderView();
+    }
+  });
+}
+
+if (weekSwitchWeekBtn) {
+  weekSwitchWeekBtn.addEventListener('click', () => {
+    weekViewSubMode = 'week';
+    renderWeekView();
+  });
+}
+if (weekSwitchDayBtn) {
+  weekSwitchDayBtn.addEventListener('click', () => {
+    weekViewSubMode = 'day';
+    renderWeekView();
+  });
+}
 
 window.addEventListener('click', (e) => {
   if (e.target === taskModal) closeModal();
@@ -2615,16 +2703,30 @@ document.addEventListener('keydown', (e) => {
 
 if (prevBtn) {
   prevBtn.addEventListener('click', () => {
-    if (currentMode === 'month' || currentMode === 'personal' || currentMode === 'subtask') currentDate.setMonth(currentDate.getMonth() - 1);
-    else if (currentMode === 'week') currentDate.setDate(currentDate.getDate() - 7);
+    if (currentMode === 'month' || currentMode === 'personal' || currentMode === 'subtask') {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+    } else if (currentMode === 'week') {
+      if (weekViewSubMode === 'day') {
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        currentDate.setDate(currentDate.getDate() - 7);
+      }
+    }
     renderView();
   });
 }
 
 if (nextBtn) {
   nextBtn.addEventListener('click', () => {
-    if (currentMode === 'month' || currentMode === 'personal' || currentMode === 'subtask') currentDate.setMonth(currentDate.getMonth() + 1);
-    else if (currentMode === 'week') currentDate.setDate(currentDate.getDate() + 7);
+    if (currentMode === 'month' || currentMode === 'personal' || currentMode === 'subtask') {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    } else if (currentMode === 'week') {
+      if (weekViewSubMode === 'day') {
+        currentDate.setDate(currentDate.getDate() + 1);
+      } else {
+        currentDate.setDate(currentDate.getDate() + 7);
+      }
+    }
     renderView();
   });
 }
