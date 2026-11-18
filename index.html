@@ -42,17 +42,13 @@
                 <span class="icon">📅</span>
                 <span>主任務</span>
             </button>
-            <button id="view-matrix-btn" class="nav-btn">
-                <span class="icon">📌</span>
-                <span>象限表</span>
+            <button id="view-monthly-goals-btn" class="nav-btn">
+                <span class="icon">🎯</span>
+                <span>月目標</span>
             </button>
             <button id="view-subtask-btn" class="nav-btn">
                 <span class="icon">📝</span>
                 <span>任務細項安排</span>
-            </button>
-            <button id="view-overdue-btn" class="nav-btn">
-                <span class="icon">⚠️</span>
-                <span>逾期事項</span>
             </button>
 
             <!-- 行動端登入區 -->
@@ -144,39 +140,85 @@
                 </div>
             </main>
 
-            <!-- 4. Month View (主月檢視) -->
+            <!-- 4. Month View (主任務：包含月曆、象限表、逾期事項) -->
             <main id="month-view" class="view-container hidden">
-                <div class="calendar-weekdays">
-                    <div>週日</div>
-                    <div>週一</div>
-                    <div>週二</div>
-                    <div>週三</div>
-                    <div>週四</div>
-                    <div>週五</div>
-                    <div>週六</div>
+                <div class="month-view-header-bar">
+                    <div class="month-view-switcher">
+                        <button type="button" id="month-subview-calendar-btn" class="month-switcher-btn active" data-subview="calendar">📅 月曆</button>
+                        <button type="button" id="month-subview-matrix-btn" class="month-switcher-btn" data-subview="matrix">📌 象限表</button>
+                        <button type="button" id="month-subview-overdue-btn" class="month-switcher-btn" data-subview="overdue">⚠️ 逾期事項</button>
+                    </div>
                 </div>
-                <div class="calendar-days" id="calendar-days"></div>
 
-                <div class="color-legend-wrapper" id="color-legend-wrapper">
-                    <div class="color-legend-bar" id="color-legend-bar">
-                        <div class="legend-header">
-                            <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
-                            <div class="legend-header-actions">
-                                <button type="button" id="btn-add-legend" class="btn-legend-action"
-                                    style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
-                                <button type="button" id="btn-toggle-legend" class="btn-legend-action" title="隱藏說明">隱藏說明
-                                    ✕</button>
-                            </div>
-                        </div>
-                        <div class="legend-items" id="legend-items"></div>
+                <!-- 1. 主任務月曆 -->
+                <div id="month-subview-calendar-container" class="month-subview-section">
+                    <div class="calendar-weekdays">
+                        <div>週日</div>
+                        <div>週一</div>
+                        <div>週二</div>
+                        <div>週三</div>
+                        <div>週四</div>
+                        <div>週五</div>
+                        <div>週六</div>
                     </div>
-                    <div id="show-legend-container" class="show-legend-container" style="display: none;">
-                        <button type="button" id="btn-show-legend" class="btn-secondary"
-                            style="font-size: 0.8rem; padding: 5px 12px;">
-                            💡 顯示任務顏色說明
-                        </button>
+                    <div class="calendar-days" id="calendar-days"></div>
+
+                    <div class="color-legend-wrapper" id="color-legend-wrapper">
+                        <div class="color-legend-bar" id="color-legend-bar">
+                            <div class="legend-header">
+                                <div class="legend-title">💡 Task Color Legend (任務顏色說明)：</div>
+                                <div class="legend-header-actions">
+                                    <button type="button" id="btn-add-legend" class="btn-legend-action"
+                                        style="background-color: #1a73e8; color: white; border: none;">+ 新增顏色說明</button>
+                                    <button type="button" id="btn-toggle-legend" class="btn-legend-action" title="隱藏說明">隱藏說明
+                                        ✕</button>
+                                </div>
+                            </div>
+                            <div class="legend-items" id="legend-items"></div>
+                        </div>
+                        <div id="show-legend-container" class="show-legend-container" style="display: none;">
+                            <button type="button" id="btn-show-legend" class="btn-secondary"
+                                style="font-size: 0.8rem; padding: 5px 12px;">
+                                💡 顯示任務顏色說明
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. 艾森豪象限表 -->
+                <div id="month-subview-matrix-container" class="month-subview-section hidden">
+                    <div class="matrix-grid">
+                        <div class="matrix-box q2">
+                            <div class="matrix-box-header">重要 且 不緊急 (Quadrant II)</div>
+                            <div class="matrix-task-list" id="q2-list"></div>
+                        </div>
+                        <div class="matrix-box q1">
+                            <div class="matrix-box-header">重要 且 緊急 (Quadrant I)</div>
+                            <div class="matrix-task-list" id="q1-list"></div>
+                        </div>
+                        <div class="matrix-box q3">
+                            <div class="matrix-box-header">不重要 且 不緊急 (Quadrant III)</div>
+                            <div class="matrix-task-list" id="q3-list"></div>
+                        </div>
+                        <div class="matrix-box q4">
+                            <div class="matrix-box-header">不重要 且 緊急 (Quadrant IV)</div>
+                            <div class="matrix-task-list" id="q4-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 逾期事項 -->
+                <div id="month-subview-overdue-container" class="month-subview-section hidden">
+                    <div class="overdue-container">
+                        <div class="overdue-header-desc">下列為已過期且尚未標記為完成的事項：</div>
+                        <div id="overdue-list" class="overdue-list"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 5. Monthly Goals View (月目標：Notion 風格月計畫) -->
+            <main id="monthly-goals-view" class="view-container hidden">
+                <div id="monthly-goals-container" class="monthly-goals-page"></div>
             </main>
 
             <!-- 5. Week View -->
@@ -197,36 +239,6 @@
                             <div class="week-columns" id="week-columns"></div>
                         </div>
                     </div>
-                </div>
-            </main>
-
-            <!-- 6. Matrix View -->
-            <main id="matrix-view" class="view-container hidden">
-                <div class="matrix-grid">
-                    <div class="matrix-box q2">
-                        <div class="matrix-box-header">重要 且 不緊急 (Quadrant II)</div>
-                        <div class="matrix-task-list" id="q2-list"></div>
-                    </div>
-                    <div class="matrix-box q1">
-                        <div class="matrix-box-header">重要 且 緊急 (Quadrant I)</div>
-                        <div class="matrix-task-list" id="q1-list"></div>
-                    </div>
-                    <div class="matrix-box q3">
-                        <div class="matrix-box-header">不重要 且 不緊急 (Quadrant III)</div>
-                        <div class="matrix-task-list" id="q3-list"></div>
-                    </div>
-                    <div class="matrix-box q4">
-                        <div class="matrix-box-header">不重要 且 緊急 (Quadrant IV)</div>
-                        <div class="matrix-task-list" id="q4-list"></div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- 7. Overdue View -->
-            <main id="overdue-view" class="view-container hidden">
-                <div class="overdue-container">
-                    <div class="overdue-header-desc">下列為已過期且尚未標記為完成的事項：</div>
-                    <div id="overdue-list" class="overdue-list"></div>
                 </div>
             </main>
 
@@ -407,6 +419,14 @@
                     </div>
                     <div class="form-row">
                         <textarea id="task-desc-input" placeholder="輸入 Description (說明與備註)..." rows="2"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>📍 地點：</label>
+                        <input type="text" id="task-location-input" placeholder="輸入地點（選填）..." autocomplete="off" style="flex:1;">
+                    </div>
+                    <div class="form-row">
+                        <label>🔗 連結：</label>
+                        <input type="url" id="task-link-input" placeholder="https://..." autocomplete="off" style="flex:1;">
                     </div>
                     <div class="form-row repeat-form-row" id="repeat-form-row">
                         <label>重複設定：</label>

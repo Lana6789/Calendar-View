@@ -45,6 +45,7 @@ const navBtnsGroup = document.getElementById('nav-btns-group');
 
 const viewPersonalBtn = document.getElementById('view-personal-btn');
 const viewMonthBtn = document.getElementById('view-month-btn');
+const viewMonthlyGoalsBtn = document.getElementById('view-monthly-goals-btn');
 const viewWeekBtn = document.getElementById('view-week-btn');
 const viewMatrixBtn = document.getElementById('view-matrix-btn');
 const viewSubtaskBtn = document.getElementById('view-subtask-btn');
@@ -61,6 +62,18 @@ const personalBtnAddLegend = document.getElementById('personal-btn-add-legend');
 const personalLegendItems = document.getElementById('personal-legend-items');
 
 const monthView = document.getElementById('month-view');
+const monthSubviewCalendarBtn = document.getElementById('month-subview-calendar-btn');
+const monthSubviewMatrixBtn = document.getElementById('month-subview-matrix-btn');
+const monthSubviewOverdueBtn = document.getElementById('month-subview-overdue-btn');
+const monthSubviewCalendarContainer = document.getElementById('month-subview-calendar-container');
+const monthSubviewMatrixContainer = document.getElementById('month-subview-matrix-container');
+const monthSubviewOverdueContainer = document.getElementById('month-subview-overdue-container');
+let monthViewSubMode = 'calendar'; // 'calendar' | 'matrix' | 'overdue'
+
+const monthlyGoalsView = document.getElementById('monthly-goals-view');
+const monthlyGoalsContainer = document.getElementById('monthly-goals-container');
+let activeGoalMonthId = null;
+
 const weekView = document.getElementById('week-view');
 const weekSwitchWeekBtn = document.getElementById('week-switch-week-btn');
 const weekSwitchDayBtn = document.getElementById('week-switch-day-btn');
@@ -159,6 +172,8 @@ const taskInput = document.getElementById('task-input');
 const taskDescInput = document.getElementById('task-desc-input');
 const addBtn = document.getElementById('add-btn');
 const modalTaskList = document.getElementById('modal-task-list');
+const taskLocationInput = document.getElementById('task-location-input');
+const taskLinkInput = document.getElementById('task-link-input');
 
 // 刪除對話框 DOM
 const deleteScopeModal = document.getElementById('delete-scope-modal');
@@ -244,6 +259,11 @@ let subtaskPageTasks = JSON.parse(localStorage.getItem('calendar_subtask_page_ta
 let courseAttendance = {};
 let courseTimeOverrides = {};
 
+let monthlyGoals = JSON.parse(localStorage.getItem('calendar_monthly_goals') || '[]');
+if (!Array.isArray(monthlyGoals)) {
+  monthlyGoals = [];
+}
+
 if (subtaskDateInput) subtaskDateInput.value = selectedDateStr;
 initTimeLabels();
 initPresetColorPalette();
@@ -310,6 +330,10 @@ onAuthStateChanged(auth, (user) => {
           isPersonalLegendHidden = !!cloudData.isPersonalLegendHidden;
           localStorage.setItem('calendar_is_personal_legend_hidden', JSON.stringify(isPersonalLegendHidden));
         }
+        if (cloudData.monthlyGoals && Array.isArray(cloudData.monthlyGoals)) {
+          monthlyGoals = cloudData.monthlyGoals;
+          localStorage.setItem('calendar_monthly_goals', JSON.stringify(monthlyGoals));
+        }
       }
       renderView();
     });
@@ -329,6 +353,8 @@ onAuthStateChanged(auth, (user) => {
     subtaskPageTasks = [];
     courseAttendance = {};
     courseTimeOverrides = {};
+    monthlyGoals = [];
+    localStorage.setItem('calendar_monthly_goals', JSON.stringify(monthlyGoals));
     renderView();
   }
 });
@@ -351,6 +377,7 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
     localStorage.setItem('calendar_is_legend_hidden', JSON.stringify(isLegendHidden));
     localStorage.setItem('calendar_personal_color_legends', JSON.stringify(personalColorLegends));
     localStorage.setItem('calendar_is_personal_legend_hidden', JSON.stringify(isPersonalLegendHidden));
+    localStorage.setItem('calendar_monthly_goals', JSON.stringify(monthlyGoals));
   } catch (e) {
     console.warn("localStorage write error:", e);
   }
@@ -374,10 +401,10 @@ function saveAllDataToFirebase(showAlertIfLoggedOut = false) {
     isLegendHidden: isLegendHidden,
     personalColorLegends: personalColorLegends,
     isPersonalLegendHidden: isPersonalLegendHidden,
+    monthlyGoals: monthlyGoals,
     updatedAt: new Date().toISOString()
   };
 
-  // 使用 cleanDataForFirestore 過濾掉包含 repeatConfig: undefined 等非法值
   const cleanedPayload = cleanDataForFirestore(rawPayload);
 
   setDoc(docRef, cleanedPayload, { merge: true }).catch((err) => {
@@ -537,6 +564,7 @@ function checkAndShowMobileGuide(mode) {
     week: { title: '📊 周檢視指南', icon: '📊', desc: '此頁面自動整合主要任務與學期課表，提供 24 小時時段檢視，掌握一週精確時間安排。' },
     matrix: { title: '📌 艾森豪象限表指南', icon: '📌', desc: '依緊急性與重要性自動分類任務優先順序，讓您優先處理重要且緊急的事項。' },
     course: { title: '🎓 課程頁面指南', icon: '🎓', desc: '可新增學期方案與每週課程，記錄每日出缺席與考試狀態，並可啟用連結至周檢視。' },
+    goals: { title: '🎯 月目標計畫指南', icon: '🎯', desc: '設定當月目標、切換 ❌ / ✅ / ✎ 狀態、撰寫簡短說明文與當月愛歌復盤！' },
     subtask: { title: '📝 任務細項安排指南', icon: '📝', desc: '單向修改或新增僅屬於本頁面的細項劃分，不影響主月檢視的大任務架構。' },
     overdue: { title: '⚠️ 逾期事項指南', icon: '⚠️', desc: '彙整所有已過期且未完成的事項，可在此快捷改期或打勾標示完成。' }
   };
@@ -557,9 +585,20 @@ if (closeGuideModalBtn) {
   });
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderView() {
   if (personalView) personalView.classList.add('hidden');
   if (monthView) monthView.classList.add('hidden');
+  if (monthlyGoalsView) monthlyGoalsView.classList.add('hidden');
   if (weekView) weekView.classList.add('hidden');
   if (matrixView) matrixView.classList.add('hidden');
   if (overdueView) overdueView.classList.add('hidden');
@@ -578,27 +617,55 @@ function renderView() {
     renderColorLegend();
   } else if (currentMode === 'month' && monthView) {
     monthView.classList.remove('hidden');
-    if (viewGuideText) viewGuideText.textContent = '此頁面用於規劃與管理主要任務與長期行程。';
-    renderCalendar();
-    renderColorLegend();
+
+    if (monthSubviewCalendarContainer) monthSubviewCalendarContainer.classList.toggle('hidden', monthViewSubMode !== 'calendar');
+    if (monthSubviewMatrixContainer) monthSubviewMatrixContainer.classList.toggle('hidden', monthViewSubMode !== 'matrix');
+    if (monthSubviewOverdueContainer) monthSubviewOverdueContainer.classList.toggle('hidden', monthViewSubMode !== 'overdue');
+
+    if (monthSubviewCalendarBtn) monthSubviewCalendarBtn.classList.toggle('active', monthViewSubMode === 'calendar');
+    if (monthSubviewMatrixBtn) monthSubviewMatrixBtn.classList.toggle('active', monthViewSubMode === 'matrix');
+    if (monthSubviewOverdueBtn) monthSubviewOverdueBtn.classList.toggle('active', monthViewSubMode === 'overdue');
+
+    if (monthViewSubMode === 'calendar') {
+      if (navBtnsGroup) navBtnsGroup.style.display = 'flex';
+      if (todayBtn) todayBtn.style.display = 'inline-block';
+      if (viewGuideText) viewGuideText.textContent = '此頁面用於規劃與管理主要任務與長期行程。';
+      renderCalendar();
+      renderColorLegend();
+    } else if (monthViewSubMode === 'matrix') {
+      if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+      if (todayBtn) todayBtn.style.display = 'none';
+      if (viewTitle) viewTitle.textContent = 'Eisenhower Matrix 艾森豪象限表';
+      if (viewGuideText) viewGuideText.textContent = '依緊急性與重要性分類任務優先順序';
+      renderMatrixView();
+    } else if (monthViewSubMode === 'overdue') {
+      if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+      if (todayBtn) todayBtn.style.display = 'none';
+      if (viewTitle) viewTitle.textContent = 'Overdue Tasks 逾期未完成事項';
+      if (viewGuideText) viewGuideText.textContent = '';
+      renderOverdueView();
+    }
+  } else if (currentMode === 'goals' && monthlyGoalsView) {
+    monthlyGoalsView.classList.remove('hidden');
+    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
+    if (todayBtn) todayBtn.style.display = 'none';
+    if (viewTitle) viewTitle.textContent = activeGoalMonthId ? '月目標詳細' : '《月計畫》';
+    if (viewGuideText) viewGuideText.textContent = '月份目標訂定、狀態切換與簡短說明文紀錄';
+    renderMonthlyGoalsView();
   } else if (currentMode === 'week' && weekView) {
     weekView.classList.remove('hidden');
     if (viewGuideText) viewGuideText.textContent = '此頁面自動整合主要任務與學期課表，提供週次 24 小時時間軸檢視。';
     renderWeekView();
-  } else if (currentMode === 'matrix' && matrixView) {
-    matrixView.classList.remove('hidden');
-    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
-    if (todayBtn) todayBtn.style.display = 'none';
-    if (viewTitle) viewTitle.textContent = 'Eisenhower Matrix 艾森豪象限表';
-    if (viewGuideText) viewGuideText.textContent = '依緊急性與重要性分類任務優先順序';
-    renderMatrixView();
-  } else if (currentMode === 'overdue' && overdueView) {
-    overdueView.classList.remove('hidden');
-    if (navBtnsGroup) navBtnsGroup.style.display = 'none';
-    if (todayBtn) todayBtn.style.display = 'none';
-    if (viewTitle) viewTitle.textContent = 'Overdue Tasks 逾期未完成事項';
-    if (viewGuideText) viewGuideText.textContent = '';
-    renderOverdueView();
+  } else if (currentMode === 'matrix') {
+    currentMode = 'month';
+    monthViewSubMode = 'matrix';
+    renderView();
+    return;
+  } else if (currentMode === 'overdue') {
+    currentMode = 'month';
+    monthViewSubMode = 'overdue';
+    renderView();
+    return;
   } else if (currentMode === 'subtask' && subtaskView) {
     subtaskView.classList.remove('hidden');
     if (viewGuideText) viewGuideText.textContent = '可在此頁面單向修改或新增僅屬於本頁面的任務，不連動到主月檢視的大任務頁面';
@@ -711,7 +778,7 @@ if (saveLegendBtn) {
   });
 }
 
-// 個人行程安排月檢視渲染 (已移除時間顯示)
+// 個人行程安排月檢視渲染
 function renderPersonalCalendar() {
   if (!personalCalendarDays) return;
   personalCalendarDays.innerHTML = '';
@@ -769,8 +836,7 @@ function renderPersonalCalendar() {
       const impMark = task.important ? '❗ ' : '';
       const isMultiDay = task.startDate && task.endDate && task.startDate !== task.endDate;
       const multiDayTag = isMultiDay ? ' (跨日)' : '';
-      
-      // 直接顯示任務名稱，不再前綴時間區間
+
       taskBadge.textContent = `${impMark}${task.text}${multiDayTag}`;
       tasksContainer.appendChild(taskBadge);
     });
@@ -786,7 +852,7 @@ function renderPersonalCalendar() {
   }
 }
 
-// 主月檢視渲染 (已移除時間顯示)
+// 主月檢視渲染
 function renderCalendar() {
   if (!calendarDays) return;
   calendarDays.innerHTML = '';
@@ -846,7 +912,6 @@ function renderCalendar() {
       const isMultiDay = task.startDate && task.endDate && task.startDate !== task.endDate;
       const multiDayTag = isMultiDay ? ' (跨日)' : '';
 
-      // 直接顯示任務名稱，不再前綴時間區間
       taskBadge.textContent = `${impMark}${task.text}${multiDayTag}`;
       tasksContainer.appendChild(taskBadge);
     });
@@ -983,7 +1048,7 @@ function renderCourseView() {
 
       const card = document.createElement('div');
       card.className = 'course-card';
-      
+
       if (status === '停課' || status === '請假') {
         card.classList.add('cancelled');
       }
@@ -1962,9 +2027,22 @@ function renderMatrixView() {
 function renderOverdueView() {
   if (!overdueList) return;
   overdueList.innerHTML = '';
-  const todayStr = formatDate(new Date());
+  const now = new Date();
+  const todayStr = formatDate(now);
+  const currentTimeStr = now.toTimeString().slice(0, 5); // "HH:MM"
 
-  let overdueTasks = tasks.filter((t) => (t.endDate || t.startDate || t.date) < todayStr && !t.completed);
+  let overdueTasks = tasks.filter((t) => {
+    if (t.completed) return false;
+    const taskEndDate = t.endDate || t.startDate || t.date;
+    if (!taskEndDate) return false;
+    if (taskEndDate < todayStr) return true;  // past day -> overdue
+    if (taskEndDate === todayStr) {
+      // same day: check if end time has passed
+      const taskEndTime = t.endTime || '23:59';
+      return taskEndTime <= currentTimeStr;
+    }
+    return false;
+  });
   overdueTasks = sortTasksByChronologicalOrder(overdueTasks);
 
   if (overdueTasks.length === 0) {
@@ -2044,7 +2122,12 @@ function openModal() {
   if (endTimeInput) endTimeInput.value = '10:00';
   if (taskInput) taskInput.value = '';
   if (taskDescInput) taskDescInput.value = '';
+  if (taskLocationInput) taskLocationInput.value = '';
+  if (taskLinkInput) taskLinkInput.value = '';
   if (importantCheckbox) importantCheckbox.checked = false;
+  // Q4: Hide important checkbox for personal tasks
+  const importantRow = importantCheckbox ? importantCheckbox.closest('.form-row') : null;
+  if (importantRow) importantRow.style.display = currentMode === 'personal' ? 'none' : '';
   if (addBtn) addBtn.textContent = '新增行程';
   updateRepeatSummaryUI();
   const scopeRow = document.getElementById('repeat-edit-scope-row');
@@ -2067,7 +2150,12 @@ function openModalForEdit(task) {
   if (endTimeInput) endTimeInput.value = task.endTime || '10:00';
   if (taskInput) taskInput.value = task.text;
   if (taskDescInput) taskDescInput.value = task.description || '';
+  if (taskLocationInput) taskLocationInput.value = task.location || '';
+  if (taskLinkInput) taskLinkInput.value = task.link || '';
   if (importantCheckbox) importantCheckbox.checked = !!task.important;
+  // Q4: Hide important checkbox for personal tasks
+  const importantRowEdit = importantCheckbox ? importantCheckbox.closest('.form-row') : null;
+  if (importantRowEdit) importantRowEdit.style.display = currentMode === 'personal' ? 'none' : '';
 
   selectedColorHex = task.color || '#2563eb';
   initPresetColorPalette();
@@ -2150,7 +2238,7 @@ if (confirmDeleteScopeBtn) {
 function renderModalTasks() {
   if (!modalTaskList) return;
   modalTaskList.innerHTML = '';
-  
+
   const isPersonal = currentMode === 'personal';
   const targetList = isPersonal ? personalTasks : tasks;
 
@@ -2173,8 +2261,10 @@ function renderModalTasks() {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = task.completed;
+      checkbox.title = task.completed ? '點擊復原（取消完成）' : '標示為完成';
       checkbox.addEventListener('change', () => {
         task.completed = checkbox.checked;
+        checkbox.title = task.completed ? '點擊復原（取消完成）' : '標示為完成';
         saveAllDataToFirebase();
         renderModalTasks();
         renderView();
@@ -2190,7 +2280,22 @@ function renderModalTasks() {
     const span = document.createElement('span');
     span.className = 'task-text';
     if (!isPersonal && task.completed) span.classList.add('completed');
-    span.textContent = `${task.startTime ? `[${task.startTime}-${task.endTime}] ` : ''}${task.text}${task.important ? ' [重要]' : ''}${isRecurring ? ' 🔁' : ''}`;
+    // Q5: Show location and link
+    let taskLabel = `${task.startTime ? `[${task.startTime}-${task.endTime}] ` : ''}${task.text}${task.important ? ' [重要]' : ''}${isRecurring ? ' 🔁' : ''}`;
+    if (task.location) taskLabel += ` 📍${task.location}`;
+    span.textContent = taskLabel;
+    // Q5: Render clickable link
+    if (task.link) {
+      const linkA = document.createElement('a');
+      linkA.href = task.link;
+      linkA.target = '_blank';
+      linkA.rel = 'noopener noreferrer';
+      linkA.textContent = ' 🔗';
+      linkA.title = task.link;
+      linkA.style.textDecoration = 'none';
+      linkA.style.fontSize = '0.9rem';
+      span.appendChild(linkA);
+    }
 
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-reschedule';
@@ -2266,11 +2371,14 @@ function saveOrAddTask() {
         ? (document.querySelector('input[name="repeat-edit-scope"]:checked')?.value || 'this')
         : 'this';
 
+      const locationVal = taskLocationInput ? taskLocationInput.value.trim() : '';
+      const linkVal = taskLinkInput ? taskLinkInput.value.trim() : '';
       const baseChanges = {
         text, description: desc,
         startTime: startVal, endTime: endVal,
         important: isImp, color: colorVal,
-        date: startDateVal, startDate: startDateVal, endDate: endDateVal
+        date: startDateVal, startDate: startDateVal, endDate: endDateVal,
+        location: locationVal, link: linkVal
       };
 
       if (isSeriesTask && scopeVal !== 'this') {
@@ -2332,6 +2440,8 @@ function saveOrAddTask() {
     }
   } else {
     const newId = Date.now();
+    const locationVal2 = taskLocationInput ? taskLocationInput.value.trim() : '';
+    const linkVal2 = taskLinkInput ? taskLinkInput.value.trim() : '';
     const baseTask = {
       id: newId,
       text, description: desc,
@@ -2339,7 +2449,8 @@ function saveOrAddTask() {
       color: colorVal, important: isImp,
       completed: false,
       date: startDateVal, startDate: startDateVal, endDate: endDateVal,
-      isPersonal: isPersonal
+      isPersonal: isPersonal,
+      location: locationVal2, link: linkVal2
     };
 
     if (pendingRepeatConfig) {
@@ -2369,34 +2480,33 @@ function generateRecurringInstances(baseTask, cfg, fromDateStr) {
   const baseEnd = new Date(baseTask.endDate || baseTask.startDate);
   const durationDays = Math.round((baseEnd - baseStart) / 86400000);
 
-function pushInstance(dateObj, idx) {
-  if (endType === 'on_date' && endDateObj && dateObj > endDateObj) return false;
-  if (endType === 'after_count' && instances.length >= endCount) return false;
-  const instanceDateStr = formatDate(dateObj);
-  const instanceEndDate = new Date(dateObj);
-  instanceEndDate.setDate(instanceEndDate.getDate() + durationDays);
-  const isFirst = instances.length === 0;
+  function pushInstance(dateObj) {
+    if (endType === 'on_date' && endDateObj && dateObj > endDateObj) return false;
+    if (endType === 'after_count' && instances.length >= endCount) return false;
+    const instanceDateStr = formatDate(dateObj);
+    const instanceEndDate = new Date(dateObj);
+    instanceEndDate.setDate(instanceEndDate.getDate() + durationDays);
+    const isFirst = instances.length === 0;
 
-  const instanceTask = {
-    ...baseTask,
-    id: isFirst ? baseTask.id : (String(baseTask.id) + '_r' + instances.length),
-    seriesId: baseTask.id,
-    date: instanceDateStr,
-    startDate: instanceDateStr,
-    endDate: formatDate(instanceEndDate),
-    completed: false
-  };
+    const instanceTask = {
+      ...baseTask,
+      id: isFirst ? baseTask.id : (String(baseTask.id) + '_r' + instances.length),
+      seriesId: baseTask.id,
+      date: instanceDateStr,
+      startDate: instanceDateStr,
+      endDate: formatDate(instanceEndDate),
+      completed: false
+    };
 
-  // 僅第一筆寫入 repeatConfig，其餘子行程省略該 key（避免賦予 undefined）
-  if (isFirst) {
-    instanceTask.repeatConfig = cfg;
-  } else {
-    delete instanceTask.repeatConfig;
+    if (isFirst) {
+      instanceTask.repeatConfig = cfg;
+    } else {
+      delete instanceTask.repeatConfig;
+    }
+
+    instances.push(instanceTask);
+    return true;
   }
-
-  instances.push(instanceTask);
-  return true;
-}
 
   const hardStop = new Date(fromDateStr);
   hardStop.setFullYear(hardStop.getFullYear() + 2);
@@ -2414,7 +2524,7 @@ function pushInstance(dateObj, idx) {
         const d = new Date(weekCursor);
         d.setDate(weekCursor.getDate() + dow);
         if (d >= from && d <= hardStop) {
-          if (!pushInstance(d, instances.length)) break;
+          if (!pushInstance(d)) break;
         }
       }
       if (instances.length >= maxInstances) break;
@@ -2426,7 +2536,7 @@ function pushInstance(dateObj, idx) {
     let safety = 0;
     while (instances.length < maxInstances && safety++ < 2000) {
       if (current > hardStop) break;
-      if (!pushInstance(current, instances.length)) break;
+      if (!pushInstance(current)) break;
       const next = new Date(current);
       if (freq === 'daily') next.setDate(next.getDate() + interval);
       else if (freq === 'monthly') next.setMonth(next.getMonth() + interval);
@@ -2639,11 +2749,31 @@ window.addEventListener('click', (e) => {
 });
 
 if (viewPersonalBtn) viewPersonalBtn.addEventListener('click', () => { currentMode = 'personal'; setActiveNavBtn(viewPersonalBtn); renderView(); });
-if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => { currentMode = 'month'; setActiveNavBtn(viewMonthBtn); renderView(); });
+if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => { currentMode = 'month'; monthViewSubMode = 'calendar'; setActiveNavBtn(viewMonthBtn); renderView(); });
+if (viewMonthlyGoalsBtn) viewMonthlyGoalsBtn.addEventListener('click', () => { currentMode = 'goals'; activeGoalMonthId = null; setActiveNavBtn(viewMonthlyGoalsBtn); renderView(); });
 if (viewWeekBtn) viewWeekBtn.addEventListener('click', () => { currentMode = 'week'; setActiveNavBtn(viewWeekBtn); renderView(); });
-if (viewMatrixBtn) viewMatrixBtn.addEventListener('click', () => { currentMode = 'matrix'; setActiveNavBtn(viewMatrixBtn); renderView(); });
+if (viewMatrixBtn) viewMatrixBtn.addEventListener('click', () => { currentMode = 'month'; monthViewSubMode = 'matrix'; setActiveNavBtn(viewMonthBtn); renderView(); });
 if (viewSubtaskBtn) viewSubtaskBtn.addEventListener('click', () => { currentMode = 'subtask'; setActiveNavBtn(viewSubtaskBtn); renderView(); });
-if (viewOverdueBtn) viewOverdueBtn.addEventListener('click', () => { currentMode = 'overdue'; setActiveNavBtn(viewOverdueBtn); renderView(); });
+if (viewOverdueBtn) viewOverdueBtn.addEventListener('click', () => { currentMode = 'month'; monthViewSubMode = 'overdue'; setActiveNavBtn(viewMonthBtn); renderView(); });
+
+if (monthSubviewCalendarBtn) {
+  monthSubviewCalendarBtn.addEventListener('click', () => {
+    monthViewSubMode = 'calendar';
+    renderView();
+  });
+}
+if (monthSubviewMatrixBtn) {
+  monthSubviewMatrixBtn.addEventListener('click', () => {
+    monthViewSubMode = 'matrix';
+    renderView();
+  });
+}
+if (monthSubviewOverdueBtn) {
+  monthSubviewOverdueBtn.addEventListener('click', () => {
+    monthViewSubMode = 'overdue';
+    renderView();
+  });
+}
 
 function setActiveNavBtn(activeBtn) {
   const allBtns = document.querySelectorAll('.sidebar .nav-btn');
@@ -2743,4 +2873,480 @@ if (todayBtn) {
     }
     renderView();
   });
+}
+
+// ==========================================
+// 月目標 (整合版：單一目標清單 + 點擊切換 ❌️ / ✅️ / ✎ + 簡短說明文)
+// ==========================================
+const GOAL_STATUS_CONFIG = {
+  edit: { icon: '✎', label: '進行中 / 規劃中 (點擊切換)', next: 'done', cssClass: 'status-edit' },
+  done: { icon: '✅', label: '已達成 (點擊切換)', next: 'fail', cssClass: 'status-done' },
+  fail: { icon: '❌', label: '未達成 (點擊切換)', next: 'edit', cssClass: 'status-fail' }
+};
+
+function normalizeMonthlyGoal(g) {
+  if (!g) return g;
+  if (!Array.isArray(g.todos)) g.todos = [];
+  if (!Array.isArray(g.songs)) g.songs = [];
+  if (!Array.isArray(g.goals)) {
+    g.goals = [];
+    if (Array.isArray(g.reviews)) {
+      g.reviews.forEach(r => {
+        g.goals.push({
+          status: r.status === 'done' ? 'done' : (r.status === 'fail' ? 'fail' : 'edit'),
+          text: r.text || '',
+          note: r.note || ''
+        });
+      });
+    }
+    if (Array.isArray(g.initialGoals)) {
+      g.initialGoals.forEach(ig => {
+        if (!g.goals.some(m => m.text === ig.text)) {
+          g.goals.push({
+            status: ig.done ? 'done' : 'edit',
+            text: ig.text || '',
+            note: ''
+          });
+        }
+      });
+    }
+  }
+  return g;
+}
+
+function renderMonthlyGoalsView() {
+  if (!monthlyGoalsContainer) return;
+  if (!activeGoalMonthId) {
+    renderMonthlyGoalsOverview();
+  } else {
+    renderMonthlyGoalDetail(activeGoalMonthId);
+  }
+}
+
+function renderMonthlyGoalsOverview() {
+  let tableRows = '';
+  if (monthlyGoals.length === 0) {
+    tableRows = `
+      <tr>
+        <td colspan="5" style="text-align: center; color: #787774; padding: 36px 16px; font-size: 0.95rem;">
+          🌱 目前尚未建立月計畫，點擊上方「🔆 新一個月的目標 👊」開始規劃！
+        </td>
+      </tr>
+    `;
+  } else {
+    monthlyGoals.forEach((goal) => {
+      normalizeMonthlyGoal(goal);
+      let statusClass = 'status-in-progress';
+      if (goal.status === 'Done') statusClass = 'status-done';
+      else if (goal.status === 'Plan') statusClass = 'status-plan';
+
+      const totalCount = (goal.goals || []).length;
+      const doneCount = (goal.goals || []).filter(item => item.status === 'done').length;
+      const progressBadge = totalCount > 0 ? `<span style="font-size: 0.78rem; color: #5f6368; margin-left: 6px;">(${doneCount}/${totalCount})</span>` : '';
+
+      tableRows += `
+        <tr class="notion-goal-row-item" data-goal-id="${goal.id}" style="cursor: pointer;">
+          <td>
+            <div class="notion-row-title" style="display: inline-flex; align-items: center; gap: 6px;">
+              <span>📄</span>
+              <span style="font-weight: 600;">${escapeHtml(goal.title)}</span>
+              ${progressBadge}
+            </div>
+          </td>
+          <td>${escapeHtml(goal.date || '')}</td>
+          <td>
+            <span class="notion-status-pill ${statusClass}">
+              ● ${escapeHtml(goal.status || 'In progress')}
+            </span>
+          </td>
+          <td style="color: #787774;">${escapeHtml(goal.note || '')}</td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-item-del" data-delete-goal-id="${goal.id}" title="刪除此月目標" style="opacity: 0.7; font-size: 0.9rem; padding: 4px 8px;">🗑️</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  monthlyGoalsContainer.innerHTML = `
+    <div class="notion-overview-header">
+      <h1 class="notion-page-title">《月計畫》</h1>
+      <div class="notion-action-btn-row">
+        <button type="button" class="btn-notion-primary" id="btn-add-new-month-goal">
+          🔆 新一個月的目標 👊
+        </button>
+      </div>
+      <div style="font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; color: #37352f;">
+        月份目標
+      </div>
+      <div class="notion-table-wrapper">
+        <table class="notion-table">
+          <thead>
+            <tr>
+              <th style="width: 28%;">年/月</th>
+              <th style="width: 16%;">Date</th>
+              <th style="width: 18%;">Status</th>
+              <th>備註</th>
+              <th style="width: 60px; text-align: center;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Row click to open detail
+  monthlyGoalsContainer.querySelectorAll('.notion-goal-row-item').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-goal-id]')) return;
+      activeGoalMonthId = tr.getAttribute('data-goal-id');
+      renderMonthlyGoalsView();
+    });
+  });
+
+  // Delete goal button
+  monthlyGoalsContainer.querySelectorAll('[data-delete-goal-id]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const gId = btn.getAttribute('data-delete-goal-id');
+      const target = monthlyGoals.find(g => g.id === gId);
+      if (confirm(`確定要刪除「${target ? target.title : '此目標'}」嗎？`)) {
+        monthlyGoals = monthlyGoals.filter(g => g.id !== gId);
+        saveAllDataToFirebase();
+        renderMonthlyGoalsView();
+      }
+    });
+  });
+
+  // Add new month goal button
+  const addBtn = document.getElementById('btn-add-new-month-goal');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      const now = new Date();
+      const defaultTitle = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const newTitle = prompt('請輸入新月份目標標題（例如：2026/11 或 115-2學期目標）：', defaultTitle);
+      if (!newTitle || !newTitle.trim()) return;
+      const newGoal = {
+        id: 'goal-' + Date.now(),
+        title: newTitle.trim(),
+        date: defaultDate,
+        status: 'In progress',
+        note: '',
+        todos: [],
+        goals: [],
+        motto: '',
+        otherGains: '',
+        songs: []
+      };
+      monthlyGoals.unshift(newGoal);
+      saveAllDataToFirebase();
+      activeGoalMonthId = newGoal.id;
+      renderMonthlyGoalsView();
+    });
+  }
+}
+
+function renderMonthlyGoalDetail(goalId) {
+  const goal = monthlyGoals.find(g => g.id === goalId);
+  if (!goal) {
+    activeGoalMonthId = null;
+    renderMonthlyGoalsView();
+    return;
+  }
+
+  normalizeMonthlyGoal(goal);
+
+  // 1. 統一「當月目標」HTML (粗黑色標題 + 左側點擊切換 ❌️ / ✅️ / ✎ + 自動換行加長說明文)
+  let unifiedGoalsHtml = '';
+  (goal.goals || []).forEach((item, index) => {
+    const st = GOAL_STATUS_CONFIG[item.status] || GOAL_STATUS_CONFIG.edit;
+    unifiedGoalsHtml += `
+      <div class="notion-goal-row">
+        <button type="button"
+                class="goal-status-toggle-btn ${st.cssClass}"
+                data-toggle-goal-status="${index}"
+                title="${st.label}">
+          ${st.icon}
+        </button>
+        <div class="goal-content-col">
+          <input type="text"
+                 class="goal-bold-title-input"
+                 data-goal-title-index="${index}"
+                 value="${escapeHtml(item.text)}"
+                 placeholder="輸入當月目標...">
+          <textarea class="goal-short-desc-input"
+                    data-goal-desc-index="${index}"
+                    rows="1"
+                    placeholder="點此新增簡短說明文或執行心得...">${escapeHtml(item.note || '')}</textarea>
+        </div>
+        <button type="button" class="btn-item-del" data-del-goal-item="${index}" title="刪除此目標">✕</button>
+      </div>
+    `;
+  });
+
+  // 2. Songs HTML
+  let songsHtml = '';
+  (goal.songs || []).forEach((song, index) => {
+    songsHtml += `
+      <div class="notion-song-item">
+        <span class="notion-bullet">•</span>
+        <span style="flex: 1;">${escapeHtml(song)}</span>
+        <button type="button" class="btn-item-del" data-del-song="${index}">✕</button>
+      </div>
+    `;
+  });
+
+  monthlyGoalsContainer.innerHTML = `
+    <div class="notion-detail-nav">
+      <button type="button" class="btn-notion-back" id="btn-goal-back">
+        ← 回到月計畫清單
+      </button>
+      <button type="button" class="btn-notion-back" style="color: #d93025;" id="btn-goal-delete">
+        🗑️ 刪除此月份
+      </button>
+    </div>
+
+    <input type="text" class="notion-title-input" id="goal-title-input" value="${escapeHtml(goal.title)}" placeholder="月份標題...">
+
+    <div class="notion-property-grid">
+      <div class="notion-prop-label">📅 Date</div>
+      <div class="notion-prop-val">
+        <input type="date" id="goal-prop-date" value="${goal.date || ''}">
+      </div>
+      <div class="notion-prop-label">⚙️ Status</div>
+      <div class="notion-prop-val">
+        <select id="goal-prop-status">
+          <option value="In progress" ${goal.status === 'In progress' ? 'selected' : ''}>🔵 In progress</option>
+          <option value="Done" ${goal.status === 'Done' ? 'selected' : ''}>🟢 Done</option>
+          <option value="Plan" ${goal.status === 'Plan' ? 'selected' : ''}>⚪ Plan</option>
+        </select>
+      </div>
+      <div class="notion-prop-label">💬 備註</div>
+      <div class="notion-prop-val">
+        <input type="text" id="goal-prop-note" style="width: 100%;" value="${escapeHtml(goal.note || '')}" placeholder="輸入本月整體備註...">
+      </div>
+    </div>
+
+    <!-- 當月目標 Card -->
+    <div class="notion-card card-gray" id="goal-section-unified-goals">
+      <div class="notion-card-title">
+        <span>🎯 當月目標</span>
+        <span style="font-size: 0.8rem; font-weight: 400; color: #5f6368;">點擊左側圖示切換：✎ 進行中 / ✅ 達成 / ❌ 未達成</span>
+      </div>
+      <div class="notion-goal-list">
+        ${unifiedGoalsHtml || '<div style="color: #8c8b88; font-size: 0.9rem; padding: 6px 0;">尚未建立當月目標，請於下方新增！</div>'}
+      </div>
+
+      <div class="notion-add-goal-box">
+        <div class="notion-add-goal-top">
+          <input type="text" class="notion-add-input" id="new-unified-goal-title" style="font-weight: 700; color: #000;" placeholder="+ 輸入新的當月目標 (按 Enter 新增)...">
+          <button type="button" class="btn-notion-primary" id="btn-add-unified-goal">+ 新增目標</button>
+        </div>
+        <textarea class="notion-add-input goal-short-desc-input" id="new-unified-goal-desc" rows="1" placeholder="簡短說明文（選填，建立後也可隨時點擊修改）..."></textarea>
+      </div>
+
+      <!-- 補充 or 其他 -->
+      <div class="notion-motto-box">
+        <div style="font-size: 0.85rem; color: #b45309; margin-bottom: 6px; font-weight: 600;">💭 補充 or 其他：</div>
+        <textarea id="goal-motto-input" class="notion-add-input" rows="2" style="width: 100%; font-weight: 500; font-family: inherit; resize: vertical;" placeholder="輸入補充或其它內容...">${escapeHtml(goal.motto || '')}</textarea>
+      </div>
+    </div>
+
+    <!-- 其他收穫 Card -->
+    <div class="notion-card card-gray" id="goal-section-gains">
+      <div class="notion-card-title">⭐ 其他收穫</div>
+      <textarea class="notion-gains-textarea" id="goal-gains-textarea" rows="4" placeholder="在此記錄本月的隨想、收穫、生活感悟...">${escapeHtml(goal.otherGains || '')}</textarea>
+    </div>
+
+    <!-- 當月愛歌 Card -->
+    <div class="notion-card card-blue" id="goal-section-songs">
+      <div class="notion-card-title">當月愛歌 🎶</div>
+      <div class="notion-song-list">
+        ${songsHtml || '<div style="color: #8c8b88; font-size: 0.9rem;">目前尚未加入喜愛的歌曲</div>'}
+      </div>
+      <div class="notion-add-row">
+        <input type="text" class="notion-add-input" id="new-song-input" placeholder="+ 加入愛歌歌名 (按 Enter 儲存)...">
+        <button type="button" class="btn-notion-primary" id="btn-add-song">+ 新增愛歌</button>
+      </div>
+    </div>
+  `;
+
+  // Auto-resize for all short description textareas
+  const autoResize = (el) => {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+  monthlyGoalsContainer.querySelectorAll('textarea.goal-short-desc-input').forEach(ta => {
+    autoResize(ta);
+    ta.addEventListener('input', () => autoResize(ta));
+  });
+
+  // Back button
+  document.getElementById('btn-goal-back').addEventListener('click', () => {
+    activeGoalMonthId = null;
+    renderMonthlyGoalsView();
+  });
+
+  // Delete goal
+  document.getElementById('btn-goal-delete').addEventListener('click', () => {
+    if (confirm(`確定要刪除「${goal.title}」此月份資料嗎？`)) {
+      monthlyGoals = monthlyGoals.filter(g => g.id !== goal.id);
+      saveAllDataToFirebase();
+      activeGoalMonthId = null;
+      renderMonthlyGoalsView();
+    }
+  });
+
+  // Property changes
+  const titleInput = document.getElementById('goal-title-input');
+  titleInput.addEventListener('change', () => {
+    goal.title = titleInput.value.trim() || '未命名月份';
+    saveAllDataToFirebase();
+  });
+
+  const dateInput = document.getElementById('goal-prop-date');
+  dateInput.addEventListener('change', () => {
+    goal.date = dateInput.value;
+    saveAllDataToFirebase();
+  });
+
+  const statusSelect = document.getElementById('goal-prop-status');
+  statusSelect.addEventListener('change', () => {
+    goal.status = statusSelect.value;
+    saveAllDataToFirebase();
+  });
+
+  const noteInput = document.getElementById('goal-prop-note');
+  noteInput.addEventListener('change', () => {
+    goal.note = noteInput.value.trim();
+    saveAllDataToFirebase();
+  });
+
+  const mottoInput = document.getElementById('goal-motto-input');
+  mottoInput.addEventListener('change', () => {
+    goal.motto = mottoInput.value.trim();
+    saveAllDataToFirebase();
+  });
+
+  const gainsTextarea = document.getElementById('goal-gains-textarea');
+  gainsTextarea.addEventListener('change', () => {
+    goal.otherGains = gainsTextarea.value;
+    saveAllDataToFirebase();
+  });
+
+  // 狀態切換按鈕：點擊在 ✎ -> ✅ -> ❌ 之間循環切換
+  monthlyGoalsContainer.querySelectorAll('[data-toggle-goal-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-toggle-goal-status'), 10);
+      if (goal.goals && goal.goals[idx]) {
+        const curStatus = goal.goals[idx].status || 'edit';
+        const nextStatus = (GOAL_STATUS_CONFIG[curStatus] || GOAL_STATUS_CONFIG.edit).next;
+        goal.goals[idx].status = nextStatus;
+        saveAllDataToFirebase();
+        renderMonthlyGoalDetail(goalId);
+      }
+    });
+  });
+
+  // 修改當月目標標題 (粗黑字)
+  monthlyGoalsContainer.querySelectorAll('[data-goal-title-index]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const idx = parseInt(inp.getAttribute('data-goal-title-index'), 10);
+      if (goal.goals && goal.goals[idx]) {
+        const val = inp.value.trim();
+        if (val) {
+          goal.goals[idx].text = val;
+        } else {
+          inp.value = goal.goals[idx].text;
+        }
+        saveAllDataToFirebase();
+      }
+    });
+  });
+
+  // 修改簡短說明文
+  monthlyGoalsContainer.querySelectorAll('[data-goal-desc-index]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const idx = parseInt(inp.getAttribute('data-goal-desc-index'), 10);
+      if (goal.goals && goal.goals[idx]) {
+        goal.goals[idx].note = inp.value.trim();
+        saveAllDataToFirebase();
+      }
+    });
+  });
+
+  // 刪除單一目標
+  monthlyGoalsContainer.querySelectorAll('[data-del-goal-item]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-del-goal-item'), 10);
+      if (goal.goals) {
+        goal.goals.splice(idx, 1);
+        saveAllDataToFirebase();
+        renderMonthlyGoalDetail(goalId);
+      }
+    });
+  });
+
+  // 新增當月目標 + 簡短說明文
+  const newGoalTitleInput = document.getElementById('new-unified-goal-title');
+  const newGoalDescInput = document.getElementById('new-unified-goal-desc');
+  const btnAddUnifiedGoal = document.getElementById('btn-add-unified-goal');
+
+  const handleAddUnifiedGoal = () => {
+    const titleVal = newGoalTitleInput ? newGoalTitleInput.value.trim() : '';
+    if (!titleVal) {
+      alert('請輸入當月目標名稱！');
+      return;
+    }
+    const descVal = newGoalDescInput ? newGoalDescInput.value.trim() : '';
+    if (!goal.goals) goal.goals = [];
+    goal.goals.push({
+      status: 'edit',
+      text: titleVal,
+      note: descVal
+    });
+    saveAllDataToFirebase();
+    renderMonthlyGoalDetail(goalId);
+  };
+
+  if (btnAddUnifiedGoal) btnAddUnifiedGoal.addEventListener('click', handleAddUnifiedGoal);
+  if (newGoalTitleInput) {
+    newGoalTitleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAddUnifiedGoal();
+    });
+  }
+
+  // Delete: Song
+  monthlyGoalsContainer.querySelectorAll('[data-del-song]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-del-song'), 10);
+      if (goal.songs) {
+        goal.songs.splice(idx, 1);
+        saveAllDataToFirebase();
+        renderMonthlyGoalDetail(goalId);
+      }
+    });
+  });
+
+  // Add: Song
+  const newSongInput = document.getElementById('new-song-input');
+  const btnAddSong = document.getElementById('btn-add-song');
+  const handleAddSong = () => {
+    const songVal = newSongInput.value.trim();
+    if (!songVal) return;
+    if (!goal.songs) goal.songs = [];
+    goal.songs.push(songVal);
+    saveAllDataToFirebase();
+    renderMonthlyGoalDetail(goalId);
+  };
+  if (btnAddSong) btnAddSong.addEventListener('click', handleAddSong);
+  if (newSongInput) {
+    newSongInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAddSong();
+    });
+  }
 }

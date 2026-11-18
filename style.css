@@ -179,6 +179,7 @@ body {
   align-items: center;
   padding: 16px 24px;
   border-bottom: 1px solid #dadce0;
+  flex-shrink: 0;
 }
 
 .left-controls {
@@ -237,6 +238,7 @@ body {
 
 .view-container {
   flex: 1;
+  min-height: 0;
   overflow: auto;
 }
 
@@ -244,7 +246,14 @@ body {
   display: none !important;
 }
 
-/* Month View & Task Badges — 嚴格鎖定欄寬與省略號截斷 */
+/* Month View & Task Badges */
+#month-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -444,19 +453,6 @@ body {
   transform: scale(1.15);
 }
 
-.btn-shade {
-  padding: 3px 8px;
-  font-size: 0.78rem;
-  border: 1px solid #dadce0;
-  background-color: #ffffff;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-shade:hover {
-  background-color: #f1f3f4;
-}
-
 .task-badge {
   display: block;
   width: 100%;
@@ -650,22 +646,6 @@ body {
   text-overflow: ellipsis;
 }
 
-.week-task-card.is-subtask-card {
-  border-left-width: 5px !important;
-}
-
-.week-subtask-tag {
-  display: inline-block;
-  background-color: rgba(255, 255, 255, 0.3);
-  font-size: 0.7em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  margin-right: 4px;
-  vertical-align: middle;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
 .week-task-card.completed {
   background-color: #f1f3f4 !important;
   border-left-color: #70757a !important;
@@ -674,18 +654,26 @@ body {
   box-shadow: none;
 }
 
-/* Eisenhower Matrix View */
-#matrix-view {
+/* =========================================================
+   Eisenhower Matrix View — 固定四象限欄位高度，超出顯示拉條
+   ========================================================= */
+#month-subview-matrix-container {
+  flex: 1;
+  min-height: 0;
   padding: 16px;
-  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .matrix-grid {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  height: 100%;
   grid-template-areas: 
     "q2 q1"
     "q3 q4";
@@ -703,27 +691,52 @@ body {
   display: flex;
   flex-direction: column;
   border: 1px solid #f6e0b5;
-  overflow: hidden;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .matrix-box-header {
   font-weight: bold;
   font-size: 1rem;
   color: #3c4043;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-align: center;
   padding-bottom: 6px;
   border-bottom: 2px solid #f2cf88;
+  flex-shrink: 0;
 }
 
 .matrix-task-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+
+/* 象限拉條美化 */
+.matrix-task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.matrix-task-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+.matrix-task-list::-webkit-scrollbar-thumb {
+  background: #d4b87a;
+  border-radius: 4px;
+}
+
+.matrix-task-list::-webkit-scrollbar-thumb:hover {
+  background: #b89854;
 }
 
 .matrix-item {
@@ -734,6 +747,7 @@ body {
   cursor: pointer;
   transition: transform 0.15s;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .matrix-item:hover {
@@ -1365,9 +1379,8 @@ body {
     display: flex;
   }
 
-  #matrix-view {
+  #month-subview-matrix-container {
     padding: 10px;
-    height: 100%;
     overflow-y: auto;
   }
 
@@ -1384,7 +1397,8 @@ body {
   }
 
   .matrix-box {
-    min-height: 180px;
+    height: 280px;
+    min-height: 240px;
     max-height: 320px;
   }
 
@@ -1583,30 +1597,6 @@ body {
 
   .card-time {
     font-size: 0.62rem;
-  }
-
-  #matrix-view {
-    padding: 10px;
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  .matrix-grid {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    gap: 12px;
-    height: auto;
-  }
-
-  .matrix-box {
-    min-height: 200px;
-    max-height: 340px;
-  }
-
-  .matrix-box-header {
-    font-size: 0.95rem;
-    margin-bottom: 8px;
-    padding-bottom: 4px;
   }
 
   .overdue-container {
@@ -2210,28 +2200,6 @@ body {
   }
 }
 
-/* Global Toast Notification */
-.global-toast {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: #202124;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 24px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  z-index: 9999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s, transform 0.25s;
-}
-.global-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
 /* Week View Header Bar & Switcher (週/日切換) */
 .week-view-header-bar {
   display: flex;
@@ -2288,9 +2256,619 @@ body {
   min-width: 100% !important;
 }
 
+/* Month View Switcher (主任務：月曆 / 象限表 / 逾期事項) */
+.month-view-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dadce0;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.month-view-switcher {
+  display: inline-flex;
+  background-color: #f1f3f4;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.month-switcher-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #3c4043;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.month-switcher-btn:hover {
+  background-color: #e8eaed;
+  color: #202124;
+}
+
+.month-switcher-btn.active {
+  background-color: #ffffff;
+  color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  font-weight: 600;
+}
+
+.month-subview-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 @media (max-width: 768px) {
-  .week-view-header-bar {
-    justify-content: flex-end;
+  .month-view-header-bar {
+    justify-content: center;
     padding: 6px 12px;
   }
+  .month-switcher-btn {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+}
+
+/* =========================================================
+   Monthly Goals View (Notion 風格月計畫：單一整合目標清單)
+   ========================================================= */
+.monthly-goals-page {
+  padding: 28px 36px;
+  max-width: 960px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #37352f;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .monthly-goals-page {
+    padding: 16px 16px;
+  }
+}
+
+.notion-overview-header {
+  margin-bottom: 24px;
+}
+
+.notion-breadcrumb {
+  font-size: 0.85rem;
+  color: #787774;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notion-page-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #37352f;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notion-action-btn-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-notion-primary {
+  background-color: #ffffff;
+  border: 1px solid #d3d1cb;
+  border-radius: 6px;
+  padding: 7px 15px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #37352f;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.05);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-notion-primary:hover {
+  background-color: #efede8;
+}
+
+.notion-table-wrapper {
+  background: #ffffff;
+  border: 1px solid #e9e8e4;
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(15, 15, 15, 0.04);
+}
+
+.notion-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.notion-table th {
+  background-color: #faf9f6;
+  border-bottom: 1px solid #e9e8e4;
+  padding: 10px 14px;
+  font-weight: 500;
+  color: #787774;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.notion-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f2f1ee;
+  vertical-align: middle;
+}
+
+.notion-table tr:hover td {
+  background-color: #fbfbfa;
+}
+
+.notion-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #37352f;
+  cursor: pointer;
+}
+
+.notion-row-title:hover {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+.notion-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-in-progress {
+  background-color: #e8f0fe;
+  color: #1967d2;
+}
+
+.status-done {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.status-plan {
+  background-color: #f1f3f4;
+  color: #5f6368;
+}
+
+/* Notion Detail Mode */
+.notion-detail-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9e8e4;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn-notion-back {
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #5f6368;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-notion-back:hover {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+.notion-title-input {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #37352f;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: 100%;
+  margin-bottom: 16px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.notion-title-input:hover,
+.notion-title-input:focus {
+  border-color: #dadce0;
+  background: #ffffff;
+}
+
+.notion-property-grid {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px 16px;
+  margin-bottom: 28px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #f2f1ee;
+}
+
+.notion-prop-label {
+  color: #787774;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notion-prop-val input,
+.notion-prop-val select {
+  border: 1px solid transparent;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #37352f;
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.notion-prop-val input:hover,
+.notion-prop-val select:hover,
+.notion-prop-val input:focus,
+.notion-prop-val select:focus {
+  border-color: #dadce0;
+  background: #ffffff;
+}
+
+/* Notion Cards */
+.notion-card {
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(15, 15, 15, 0.03);
+}
+
+.notion-card.card-purple {
+  background-color: #f7f3fb;
+  border: 1px solid #eedcf7;
+}
+
+.notion-card.card-peach {
+  background-color: #fef7ed;
+  border: 1px solid #fed7aa;
+}
+
+.notion-card.card-gray {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.notion-card.card-blue {
+  background-color: #edf5fe;
+  border: 1px solid #d0e4fc;
+}
+
+.notion-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notion-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notion-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.95rem;
+  padding: 2px 0;
+}
+
+.notion-check-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: #1a73e8;
+}
+
+.notion-check-item.completed .notion-check-text {
+  text-decoration: line-through;
+  color: #8c8b88;
+}
+
+.notion-check-text {
+  flex: 1;
+  word-break: break-word;
+}
+
+.btn-item-del {
+  opacity: 0.35;
+  background: transparent;
+  border: none;
+  color: #787774;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.notion-check-item:hover .btn-item-del,
+.notion-goal-row:hover .btn-item-del,
+.notion-song-item:hover .btn-item-del {
+  opacity: 1;
+}
+
+.btn-item-del:hover {
+  background: #fee2e2;
+  color: #d93025;
+}
+
+.notion-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.notion-add-input {
+  flex: 1;
+  border: 1px solid #d3d1cb;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+
+.notion-add-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+}
+
+/* =========================================================
+   統一月目標清單 (粗黑字標題 + 點擊切換 ❌️ / ✅️ / ✎ + 簡短說明文)
+   ========================================================= */
+.notion-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notion-goal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.notion-goal-row:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.goal-status-toggle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid #dadce0;
+  background-color: #f8f9fa;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s, background-color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.goal-status-toggle-btn:hover {
+  transform: scale(1.08);
+  border-color: #1a73e8;
+}
+
+.goal-status-toggle-btn.status-done {
+  background-color: #e6f4ea;
+  border-color: #34a853;
+}
+
+.goal-status-toggle-btn.status-fail {
+  background-color: #fce8e6;
+  border-color: #ea4335;
+}
+
+.goal-status-toggle-btn.status-edit {
+  background-color: #fef7e0;
+  border-color: #fbbc04;
+}
+
+.goal-content-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 當月目標字體粗黑色 */
+.goal-bold-title-input {
+  width: 100%;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #000000;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  line-height: 1.4;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.goal-bold-title-input:hover,
+.goal-bold-title-input:focus {
+  outline: none;
+  border-color: #dadce0;
+  background-color: #f8f9fa;
+}
+
+/* 簡短說明文輸入框 */
+.goal-short-desc-input {
+  width: 100%;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #1f2328; /* 自己輸入的說明文字：深色清晰 */
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  padding: 4px 6px;
+  line-height: 1.5;
+  resize: none;
+  overflow-y: hidden;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.goal-short-desc-input::placeholder {
+  color: #b0b4b8; /* 提示文字：比原本更淺 */
+  font-style: italic;
+  font-weight: 400;
+}
+
+.goal-short-desc-input:hover,
+.goal-short-desc-input:focus {
+  outline: none;
+  border-color: #dadce0;
+  background-color: #f8f9fa;
+  color: #111827;
+}
+
+.notion-add-goal-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+}
+
+.notion-add-goal-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.notion-motto-box {
+  background: #ffffff;
+  border-left: 4px solid #f2994a;
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-weight: 500;
+  margin: 18px 0 4px 0;
+  color: #202124;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Songs & Gains */
+.notion-song-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notion-song-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.notion-bullet {
+  color: #1a73e8;
+  font-size: 1.1rem;
+}
+
+.notion-gains-textarea {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  background: #ffffff;
+}
+
+.notion-gains-textarea:focus {
+  outline: none;
+  border-color: #1a73e8;
+}
+
+@media (max-width: 600px) {
+  .notion-add-goal-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* Q5: Task link & location in modal list */
+.modal-task-item a[target="_blank"] {
+  color: #1a73e8;
+  margin-left: 2px;
+}
+
+/* Q7: Completed task undo hint */
+input[type="checkbox"][title]:hover {
+  cursor: pointer;
 }
